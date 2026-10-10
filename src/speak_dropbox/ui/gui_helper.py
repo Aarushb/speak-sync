@@ -2,8 +2,85 @@
 
 from __future__ import annotations
 
+import ctypes
+from ctypes import wintypes
+import re
+import sys
 from typing import Any
 import wx
+
+_PROPID_ACC_NAME_GUID = "{608D3DF8-8128-4AA7-A428-F55E49267291}"
+_OBJID_CLIENT = 0xFFFFFFFC
+_MNEMONIC_RE = re.compile(r"&(&)|&(?=\S)")
+_acc_prop_services: Any = None
+
+
+def _get_acc_prop_services() -> Any:
+    """Return cached COM IAccPropServices instance on Windows for UIA Dynamic Annotation."""
+    global _acc_prop_services
+    if sys.platform != "win32":
+        return None
+    if _acc_prop_services is not None:
+        return _acc_prop_services
+    try:
+        import comtypes
+        import comtypes.client
+
+        comtypes.CoInitialize()
+        comtypes.client.GetModule("oleacc.dll")
+        from comtypes.gen import Accessibility
+
+        _acc_prop_services = comtypes.client.CreateObject(
+            Accessibility.CAccPropServices,
+            interface=Accessibility.IAccPropServices,
+        )
+    except Exception:
+        _acc_prop_services = None
+    return _acc_prop_services
+
+
+def set_accessible_name(ctrl: wx.Window, name: str) -> str:
+    """Set the accessible name on a wx.Window and annotate its Win32 HWND(s) for Windows UIA.
+
+    Composite controls like wx.SpinCtrlDouble create internal Win32 Edit and msctls_updown32
+    child HWNDs that do not inherit wx.Window.SetName() without IAccPropServices annotation.
+    """
+    clean_name = _MNEMONIC_RE.sub(lambda m: "&" if m.group(1) else "", name).rstrip(":").strip()
+    ctrl.SetName(clean_name)
+    if sys.platform == "win32":
+        hwnd = int(ctrl.GetHandle() or 0)
+        acc_srv = _get_acc_prop_services()
+        if hwnd and acc_srv is not None:
+            try:
+                import comtypes
+
+                prop_id = comtypes.GUID(_PROPID_ACC_NAME_GUID)
+                acc_srv.SetHwndPropStr(hwnd, _OBJID_CLIENT, 0, prop_id, clean_name)
+                if isinstance(ctrl, (wx.SpinCtrl, wx.SpinCtrlDouble)):
+                    user32 = ctypes.windll.user32
+                    enum_proc_t = ctypes.WINFUNCTYPE(
+                        wintypes.BOOL,
+                        wintypes.HWND,
+                        wintypes.LPARAM,
+                    )
+
+                    def _annotate_child(child_hwnd: int, _lparam: int) -> bool:
+                        try:
+                            acc_srv.SetHwndPropStr(
+                                int(child_hwnd),
+                                _OBJID_CLIENT,
+                                0,
+                                prop_id,
+                                clean_name,
+                            )
+                        except Exception:
+                            pass
+                        return True
+
+                    user32.EnumChildWindows(hwnd, enum_proc_t(_annotate_child), 0)
+            except Exception:
+                pass
+    return clean_name
 
 
 class BoxSizerHelper:
@@ -36,13 +113,12 @@ class BoxSizerHelper:
     ) -> tuple[wx.StaticText, Any]:
         """Create a wx.StaticText immediately preceding its target control in creation & tab order.
 
-        Also sets the control's accessible Name (Stripping '&' mnemonic) so UIA screen readers
-        announce the label reliably on focus.
+        Also sets the control's accessible Name (stripping '&' mnemonic) and annotates its
+        Win32 HWND so UIA screen readers announce the label reliably on focus.
         """
         label = wx.StaticText(self.parent, label=label_text)
         ctrl = control_cls(self.parent, **kwargs)
-        clean_name = label_text.replace("&", "").rstrip(":").strip()
-        ctrl.SetName(clean_name)
+        set_accessible_name(ctrl, label_text)
 
         row_sizer = wx.BoxSizer(wx.VERTICAL)
         row_sizer.Add(label, 0, wx.BOTTOM, 4)
@@ -60,7 +136,6 @@ class ShortcutReferenceDialog(wx.Dialog):
             title="Speak Dropbox Keyboard Shortcuts",
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
-        self.SetSize((580, 420))
         helper = BoxSizerHelper(self, wx.VERTICAL)
 
         shortcuts_data = [
@@ -83,8 +158,9 @@ class ShortcutReferenceDialog(wx.Dialog):
             proportion=1,
             style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN,
         )
-        self.list_ctrl.InsertColumn(0, "Shortcut", width=230)
-        self.list_ctrl.InsertColumn(1, "Action", width=310)
+        self.list_ctrl.InsertColumn(0, "Shortcut", width=self.FromDIP(240))
+        self.list_ctrl.InsertColumn(1, "Action", width=self.FromDIP(340))
+        self.list_ctrl.SetMinSize(self.FromDIP(wx.Size(600, 260)))
 
         for idx, (keys, desc) in enumerate(shortcuts_data):
             row = self.list_ctrl.InsertItem(idx, keys)
@@ -98,7 +174,11 @@ class ShortcutReferenceDialog(wx.Dialog):
         if btn_sizer:
             helper.add_item(btn_sizer, flag=wx.ALIGN_RIGHT | wx.ALL, border=10)
 
-        self.SetSizer(helper.sizer)
+        self.SetSizerAndFit(helper.sizer)
+        min_size = self.FromDIP(wx.Size(640, 420))
+        cur_size = self.GetSize()
+        self.SetSize(wx.Size(max(cur_size.width, min_size.width), max(cur_size.height, min_size.height)))
+        self.SetMinSize(self.GetSize())
         self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
 
     def _on_char_hook(self, event: wx.KeyEvent) -> None:
