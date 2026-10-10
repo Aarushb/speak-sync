@@ -62,16 +62,23 @@ def test_manage_sources_dialog_population_and_apply(wx_app: wx.App) -> None:
         dlg._on_toggle_source(wx.CommandEvent())
         assert dlg.working_config.sources[0].enabled is False
 
-        # Modify speech & hotkey settings
+        # Default modifier checkboxes should have Alt and Shift checked
+        assert dlg.chk_mod_alt.GetValue() is True
+        assert dlg.chk_mod_shift.GetValue() is True
+        assert dlg.chk_mod_ctrl.GetValue() is False
+        assert dlg.chk_mod_win.GetValue() is False
+
+        # Modify speech & hotkey settings via modifier checkboxes
         dlg.chk_strip_unread.SetValue(True)
         dlg.spin_loop_interval.SetValue(4.0)
-        dlg.modifier_choice.SetSelection(1)  # Ctrl+Shift+Win
-        dlg._on_modifier_changed(wx.CommandEvent())
+        dlg.chk_mod_ctrl.SetValue(True)
+        dlg._on_modifier_checkboxes_changed(wx.CommandEvent())
 
         updated = dlg.apply_to_config()
         assert updated.strip_unread_notifications is True
         assert updated.loop_interval_seconds == 4.0
-        assert updated.hotkey_modifier == "Ctrl+Shift+Win"
-        assert updated.summary_hotkey == "Ctrl+Shift+Win+0"
+        assert updated.hotkey_modifier == "Ctrl+Alt+Shift"
+        assert updated.summary_hotkey == "Ctrl+Alt+Shift+0"
+        assert updated.manage_hotkey == "Ctrl+Alt+Shift+M"
     finally:
         dlg.Destroy()
