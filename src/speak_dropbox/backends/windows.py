@@ -359,6 +359,15 @@ class WindowsTrayBackend(TrayBackend):
             logger.debug("UIA query on container %#x failed, invalidating cache: %s", target.hwnd, exc)
             self._tls.element_cache.pop(target.hwnd, None)
 
+        if not results and target.container_kind == "toolbar32":
+            from speak_dropbox.backends.win32_toolbar import read_toolbar_tray_icons
+
+            results = read_toolbar_tray_icons(
+                target.hwnd,
+                target.location,
+                strip_unread_notifications=strip_unread_notifications,
+            )
+
         return results
 
     def _query_on_worker(self, strip_unread_notifications: bool) -> list[TrayIconItem]:
