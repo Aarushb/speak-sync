@@ -15,7 +15,7 @@ from speak_dropbox.models import TrayIconItem, TrayLocation
 
 logger = logging.getLogger(__name__)
 
-_SNI_ITEM_RE = re.compile(r'"([^"]+)"')
+_SNI_ITEM_RE = re.compile(r"""['"]([^'"]+/[^'"]+)['"]""")
 _GDBUS_STR_RE = re.compile(r"<'([^']*)'>")
 
 
