@@ -1,4 +1,4 @@
-"""High-contrast programmatic system tray icon generator for Speak Dropbox."""
+"""High-contrast programmatic system tray icon generator for SpeakSync."""
 
 from __future__ import annotations
 

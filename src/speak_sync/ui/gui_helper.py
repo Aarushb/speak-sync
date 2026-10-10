@@ -133,7 +133,7 @@ class ShortcutReferenceDialog(wx.Dialog):
     def __init__(self, parent: wx.Window | None, modifier: str = "Alt+Shift") -> None:
         super().__init__(
             parent,
-            title="Speak Dropbox Keyboard Shortcuts",
+            title="SpeakSync Keyboard Shortcuts",
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
         helper = BoxSizerHelper(self, wx.VERTICAL)
@@ -143,7 +143,7 @@ class ShortcutReferenceDialog(wx.Dialog):
             (f"Double-press {modifier}+1..9", "Copy that slot's status text to the clipboard"),
             (f"{modifier}+0", "Speak summary of all active monitored sources"),
             (f"{modifier}+M", "Open Manage Monitored Sources & Settings dialog"),
-            ("Win+B then Enter / Context Key", "Open Speak Dropbox system tray menu"),
+            ("Win+B then Enter / Context Key", "Open SpeakSync system tray menu"),
             ("Alt+A (in Manage Sources)", "Add source from currently detected tray icons"),
             ("Alt+K (in Manage Sources)", "Add a custom keyword source rule"),
             ("Alt+U / Alt+D (in Manage Sources)", "Move selected source slot Up or Down"),

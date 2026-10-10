@@ -6,8 +6,8 @@ from collections.abc import Callable, Sequence
 import re
 import wx
 
-from speak_dropbox.models import SourceRule, TrayIconItem
-from speak_dropbox.ui.gui_helper import BoxSizerHelper, set_accessible_name
+from speak_sync.models import SourceRule, TrayIconItem
+from speak_sync.ui.gui_helper import BoxSizerHelper, set_accessible_name
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 

@@ -1,4 +1,4 @@
-"""CLI and GUI entrypoint for Speak Dropbox (`python -m speak_dropbox`)."""
+"""CLI and GUI entrypoint for SpeakSync (`python -m speak_sync`)."""
 
 from __future__ import annotations
 
@@ -7,16 +7,16 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from speak_dropbox import __version__
-from speak_dropbox.backends import TrayBackend, create_tray_backend
-from speak_dropbox.config import AppConfig
-from speak_dropbox.core.monitor import TrayMonitorService
-from speak_dropbox.services.speech import SpeechService
+from speak_sync import __version__
+from speak_sync.backends import TrayBackend, create_tray_backend
+from speak_sync.config import AppConfig
+from speak_sync.core.monitor import TrayMonitorService
+from speak_sync.services.speech import SpeechService
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="speak-dropbox",
+        prog="speak-sync",
         description=(
             "Accessible multi-source system tray and hidden overflow sync monitor "
             "with Prism screen reader speech, 3-stage sync audio cues, and global slot hotkeys."
@@ -25,7 +25,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--version",
         action="version",
-        version=f"speak-dropbox {__version__}",
+        version=f"speak-sync {__version__}",
     )
     parser.add_argument(
         "-s",
@@ -122,16 +122,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_cli_one_shot(args)
 
     if sys.platform == "win32":
-        from speak_dropbox.backends.windows import ensure_default_desktop
+        from speak_sync.backends.windows import ensure_default_desktop
 
         ensure_default_desktop()
 
     import wx
-    from speak_dropbox.app import SpeakDropboxController
+    from speak_sync.app import SpeakSyncController
 
     app = wx.App(False)
-    app.SetAppName("SpeakDropbox")
-    controller = SpeakDropboxController(config_path=args.config)
+    app.SetAppName("SpeakSync")
+    controller = SpeakSyncController(config_path=args.config)
     if args.manage:
         wx.CallAfter(controller.open_manage_dialog)
     app.MainLoop()

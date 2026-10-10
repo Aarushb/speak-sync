@@ -6,16 +6,16 @@ import logging
 from pathlib import Path
 import wx
 
-from speak_dropbox.backends import TrayBackend, create_tray_backend
-from speak_dropbox.config import AppConfig
-from speak_dropbox.core.autostart import set_autostart_enabled
-from speak_dropbox.core.monitor import TrayMonitorService
-from speak_dropbox.services.audio import AudioCueService
-from speak_dropbox.services.hotkey import GlobalHotkeyService
-from speak_dropbox.services.speech import SpeechService
-from speak_dropbox.ui.gui_helper import ShortcutReferenceDialog
-from speak_dropbox.ui.source_dialog import ManageSourcesDialog
-from speak_dropbox.ui.tray import SpeakDropboxTrayIcon
+from speak_sync.backends import TrayBackend, create_tray_backend
+from speak_sync.config import AppConfig
+from speak_sync.core.autostart import set_autostart_enabled
+from speak_sync.core.monitor import TrayMonitorService
+from speak_sync.services.audio import AudioCueService
+from speak_sync.services.hotkey import GlobalHotkeyService
+from speak_sync.services.speech import SpeechService
+from speak_sync.ui.gui_helper import ShortcutReferenceDialog
+from speak_sync.ui.source_dialog import ManageSourcesDialog
+from speak_sync.ui.tray import SpeakSyncTrayIcon
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def copy_text_to_clipboard(text: str) -> bool:
     return False
 
 
-class SpeakDropboxController(wx.EvtHandler):
+class SpeakSyncController(wx.EvtHandler):
     """Coordinates background tray polling, speech output, 3-stage audio cues, hotkeys, and UI."""
 
     def __init__(
@@ -66,7 +66,7 @@ class SpeakDropboxController(wx.EvtHandler):
             ui_dispatcher=wx.CallAfter if wx.App.Get() is not None else None,
         )
 
-        self.tray_icon: SpeakDropboxTrayIcon | None = None
+        self.tray_icon: SpeakSyncTrayIcon | None = None
         self._poll_timer: wx.Timer | None = None
         self._manage_dialog_open: bool = False
         self._shortcuts_dialog_open: bool = False
@@ -75,7 +75,7 @@ class SpeakDropboxController(wx.EvtHandler):
         self.poll_once(is_initial=True)
 
         if create_tray_ui and wx.App.Get() is not None:
-            self.tray_icon = SpeakDropboxTrayIcon(
+            self.tray_icon = SpeakSyncTrayIcon(
                 config=self.config,
                 monitor=self.monitor,
                 on_speak_slot=self.speak_slot,

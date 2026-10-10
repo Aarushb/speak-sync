@@ -6,16 +6,16 @@ from collections.abc import Callable
 import wx
 import wx.adv
 
-from speak_dropbox.config import AppConfig
-from speak_dropbox.core.folders import open_sync_folder, resolve_sync_folder
-from speak_dropbox.core.monitor import TrayMonitorService
-from speak_dropbox.models import SourceRule, TrayIconItem
-from speak_dropbox.services.hotkey import normalize_modifier_display
-from speak_dropbox.ui.icon_gen import create_tray_icon
-from speak_dropbox.ui.tray_picker_dialog import infer_app_name_and_keyword, make_source_id
+from speak_sync.config import AppConfig
+from speak_sync.core.folders import open_sync_folder, resolve_sync_folder
+from speak_sync.core.monitor import TrayMonitorService
+from speak_sync.models import SourceRule, TrayIconItem
+from speak_sync.services.hotkey import normalize_modifier_display
+from speak_sync.ui.icon_gen import create_tray_icon
+from speak_sync.ui.tray_picker_dialog import infer_app_name_and_keyword, make_source_id
 
 
-class SpeakDropboxTrayIcon(wx.adv.TaskBarIcon):
+class SpeakSyncTrayIcon(wx.adv.TaskBarIcon):
     """System tray icon with dynamic source submenus, quick-add tray scanner, and checkable toggles."""
 
     def __init__(

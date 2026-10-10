@@ -6,18 +6,18 @@ from collections.abc import Callable
 import copy
 import wx
 
-from speak_dropbox.config import AppConfig
-from speak_dropbox.core.monitor import TrayMonitorService
-from speak_dropbox.models import SourceRule
-from speak_dropbox.services.audio import AudioCueService
-from speak_dropbox.services.hotkey import (
+from speak_sync.config import AppConfig
+from speak_sync.core.monitor import TrayMonitorService
+from speak_sync.models import SourceRule
+from speak_sync.services.audio import AudioCueService
+from speak_sync.services.hotkey import (
     SUPPORTED_MODIFIER_PRESETS,
     flags_to_modifier,
     modifier_to_flags,
     normalize_modifier_display,
 )
-from speak_dropbox.ui.gui_helper import BoxSizerHelper, ShortcutReferenceDialog, set_accessible_name
-from speak_dropbox.ui.tray_picker_dialog import CustomSourceRuleDialog, DetectTrayIconsDialog
+from speak_sync.ui.gui_helper import BoxSizerHelper, ShortcutReferenceDialog, set_accessible_name
+from speak_sync.ui.tray_picker_dialog import CustomSourceRuleDialog, DetectTrayIconsDialog
 
 
 class ManageSourcesDialog(wx.Dialog):
@@ -34,7 +34,7 @@ class ManageSourcesDialog(wx.Dialog):
     ) -> None:
         super().__init__(
             parent,
-            title="Speak Dropbox - Manage Sources & Settings",
+            title="SpeakSync - Manage Sources & Settings",
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
         self.working_config = copy.deepcopy(config)
@@ -318,7 +318,7 @@ class ManageSourcesDialog(wx.Dialog):
 
         self.chk_run_on_startup = wx.CheckBox(
             panel,
-            label="&Run Speak Dropbox automatically on system startup",
+            label="&Run SpeakSync automatically on system startup",
         )
         self.chk_run_on_startup.SetValue(self.working_config.run_on_startup)
         set_accessible_name(self.chk_run_on_startup, self.chk_run_on_startup.GetLabel())
