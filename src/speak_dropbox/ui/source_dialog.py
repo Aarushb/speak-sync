@@ -45,10 +45,12 @@ class ManageSourcesDialog(wx.Dialog):
         self.sources_panel = self._build_sources_tab(self.notebook)
         self.speech_audio_panel = self._build_speech_audio_tab(self.notebook)
         self.hotkeys_panel = self._build_hotkeys_general_tab(self.notebook)
+        self.activity_panel = self._build_activity_log_tab(self.notebook)
 
         self.notebook.AddPage(self.sources_panel, "Monitored Sources")
         self.notebook.AddPage(self.speech_audio_panel, "Speech && Audio Cues")
         self.notebook.AddPage(self.hotkeys_panel, "Hotkeys && General")
+        self.notebook.AddPage(self.activity_panel, "Activity Log")
 
         main_helper.add_item(self.notebook, proportion=1, flag=wx.EXPAND | wx.ALL, border=8)
 
@@ -73,6 +75,7 @@ class ManageSourcesDialog(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
         self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
         self.refresh_sources_list()
+        self.refresh_activity_log()
 
     def _build_sources_tab(self, parent: wx.Notebook) -> wx.Panel:
         panel = wx.Panel(parent)
@@ -282,6 +285,71 @@ class ManageSourcesDialog(wx.Dialog):
 
         panel.SetSizer(helper.sizer)
         return panel
+
+    def _build_activity_log_tab(self, parent: wx.Notebook) -> wx.Panel:
+        panel = wx.Panel(parent)
+        helper = BoxSizerHelper(panel, wx.VERTICAL)
+
+        _, self.activity_list = helper.add_labeled_control(
+            "&Recent Sync Activity Transitions:",
+            wx.ListCtrl,
+            proportion=1,
+            style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN,
+        )
+        self.activity_list.InsertColumn(0, "Time", width=95)
+        self.activity_list.InsertColumn(1, "Source", width=130)
+        self.activity_list.InsertColumn(2, "State", width=110)
+        self.activity_list.InsertColumn(3, "Announcement", width=360)
+
+        btn_row = wx.BoxSizer(wx.HORIZONTAL)
+        self.copy_activity_btn = wx.Button(panel, label="&Copy Selected Entry")
+        self.refresh_activity_btn = wx.Button(panel, label="&Refresh Log")
+        self.clear_activity_btn = wx.Button(panel, label="C&lear Log")
+
+        for btn in (
+            self.copy_activity_btn,
+            self.refresh_activity_btn,
+            self.clear_activity_btn,
+        ):
+            btn.SetName(btn.GetLabel().replace("&", ""))
+            btn_row.Add(btn, 0, wx.RIGHT, 6)
+
+        helper.add_item(btn_row, flag=wx.ALL, border=6)
+
+        self.copy_activity_btn.Bind(wx.EVT_BUTTON, self._on_copy_activity_entry)
+        self.refresh_activity_btn.Bind(wx.EVT_BUTTON, lambda _e: self.refresh_activity_log())
+        self.clear_activity_btn.Bind(wx.EVT_BUTTON, self._on_clear_activity_log)
+
+        panel.SetSizer(helper.sizer)
+        return panel
+
+    def refresh_activity_log(self) -> None:
+        """Populate the activity log ListCtrl with recent transitions (newest first)."""
+        self.activity_list.DeleteAllItems()
+        entries = self.monitor.activity_log.get_entries(newest_first=True)
+        for idx, entry in enumerate(entries):
+            row = self.activity_list.InsertItem(idx, entry.display_time)
+            self.activity_list.SetItem(row, 1, entry.display_name)
+            self.activity_list.SetItem(row, 2, entry.state.display_label)
+            self.activity_list.SetItem(row, 3, entry.spoken_text)
+        if entries:
+            self.activity_list.Select(0)
+            self.activity_list.Focus(0)
+
+    def _on_copy_activity_entry(self, _event: wx.CommandEvent) -> None:
+        idx = self.activity_list.GetFirstSelected()
+        entries = self.monitor.activity_log.get_entries(newest_first=True)
+        if 0 <= idx < len(entries):
+            text = entries[idx].format_line()
+            if wx.TheClipboard.Open():
+                try:
+                    wx.TheClipboard.SetData(wx.TextDataObject(text))
+                finally:
+                    wx.TheClipboard.Close()
+
+    def _on_clear_activity_log(self, _event: wx.CommandEvent) -> None:
+        self.monitor.activity_log.clear()
+        self.refresh_activity_log()
 
     def refresh_sources_list(self, select_index: int | None = None) -> None:
         """Populate the sources ListCtrl with current rules and live tray statuses."""
