@@ -10,7 +10,12 @@ from speak_dropbox.config import AppConfig
 from speak_dropbox.core.monitor import TrayMonitorService
 from speak_dropbox.models import SourceRule
 from speak_dropbox.services.audio import AudioCueService
-from speak_dropbox.services.hotkey import SUPPORTED_MODIFIER_PRESETS, normalize_modifier_display
+from speak_dropbox.services.hotkey import (
+    SUPPORTED_MODIFIER_PRESETS,
+    flags_to_modifier,
+    modifier_to_flags,
+    normalize_modifier_display,
+)
 from speak_dropbox.ui.gui_helper import BoxSizerHelper, ShortcutReferenceDialog, set_accessible_name
 from speak_dropbox.ui.tray_picker_dialog import CustomSourceRuleDialog, DetectTrayIconsDialog
 
@@ -260,6 +265,36 @@ class ManageSourcesDialog(wx.Dialog):
         self.modifier_choice.SetSelection(presets.index(current_mod))
         self.modifier_choice.Bind(wx.EVT_CHOICE, self._on_modifier_changed)
 
+        mod_box = wx.StaticBoxSizer(
+            wx.HORIZONTAL,
+            panel,
+            "Remap Modifier Keys (Number Row 1-9 and 0 Remain Fixed)",
+        )
+        mod_parent = mod_box.GetStaticBox()
+        has_ctrl, has_alt, has_shift, has_win = modifier_to_flags(current_mod)
+
+        self.chk_mod_ctrl = wx.CheckBox(mod_parent, label="Use &Ctrl modifier")
+        self.chk_mod_alt = wx.CheckBox(mod_parent, label="Use &Alt modifier")
+        self.chk_mod_shift = wx.CheckBox(mod_parent, label="Use &Shift modifier")
+        self.chk_mod_win = wx.CheckBox(mod_parent, label="Use &Win modifier")
+
+        self.chk_mod_ctrl.SetValue(has_ctrl)
+        self.chk_mod_alt.SetValue(has_alt)
+        self.chk_mod_shift.SetValue(has_shift)
+        self.chk_mod_win.SetValue(has_win)
+
+        for chk in (
+            self.chk_mod_ctrl,
+            self.chk_mod_alt,
+            self.chk_mod_shift,
+            self.chk_mod_win,
+        ):
+            set_accessible_name(chk, chk.GetLabel())
+            chk.Bind(wx.EVT_CHECKBOX, self._on_modifier_checkboxes_changed)
+            mod_box.Add(chk, 0, wx.ALL, 6)
+
+        helper.add_item(mod_box, flag=wx.EXPAND | wx.ALL, border=6)
+
         _, self.summary_hotkey_input = helper.add_labeled_control(
             "Speak &All Active Sources Summary Hotkey:",
             wx.TextCtrl,
@@ -472,8 +507,31 @@ class ManageSourcesDialog(wx.Dialog):
         sel = self.modifier_choice.GetSelection()
         if sel != wx.NOT_FOUND:
             mod = self.modifier_choice.GetString(sel)
+            has_ctrl, has_alt, has_shift, has_win = modifier_to_flags(mod)
+            self.chk_mod_ctrl.SetValue(has_ctrl)
+            self.chk_mod_alt.SetValue(has_alt)
+            self.chk_mod_shift.SetValue(has_shift)
+            self.chk_mod_win.SetValue(has_win)
             self.summary_hotkey_input.SetValue(f"{mod}+0")
             self.manage_hotkey_input.SetValue(f"{mod}+M")
+
+    def _on_modifier_checkboxes_changed(self, _event: wx.CommandEvent) -> None:
+        has_ctrl = self.chk_mod_ctrl.GetValue()
+        has_alt = self.chk_mod_alt.GetValue()
+        has_shift = self.chk_mod_shift.GetValue()
+        has_win = self.chk_mod_win.GetValue()
+        if not (has_ctrl or has_alt or has_shift or has_win):
+            has_alt = True
+            has_shift = True
+            self.chk_mod_alt.SetValue(True)
+            self.chk_mod_shift.SetValue(True)
+        mod = flags_to_modifier(ctrl=has_ctrl, alt=has_alt, shift=has_shift, win=has_win)
+        idx = self.modifier_choice.FindString(mod)
+        if idx == wx.NOT_FOUND:
+            idx = self.modifier_choice.Append(mod)
+        self.modifier_choice.SetSelection(idx)
+        self.summary_hotkey_input.SetValue(f"{mod}+0")
+        self.manage_hotkey_input.SetValue(f"{mod}+M")
 
     def _preview_sound(self, cue_type: str) -> None:
         if self.audio_service is None:
@@ -532,6 +590,13 @@ class ManageSourcesDialog(wx.Dialog):
         sel = self.modifier_choice.GetSelection()
         if sel != wx.NOT_FOUND:
             self.working_config.hotkey_modifier = self.modifier_choice.GetString(sel)
+        else:
+            self.working_config.hotkey_modifier = flags_to_modifier(
+                ctrl=self.chk_mod_ctrl.GetValue(),
+                alt=self.chk_mod_alt.GetValue(),
+                shift=self.chk_mod_shift.GetValue(),
+                win=self.chk_mod_win.GetValue(),
+            )
         self.working_config.summary_hotkey = (
             self.summary_hotkey_input.GetValue().strip()
             or f"{self.working_config.hotkey_modifier}+0"
