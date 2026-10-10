@@ -28,9 +28,8 @@ class _FakePrismBackend:
 
 
 def test_speech_service_output_and_braille() -> None:
-    svc = SpeechService(enabled=True)
     fake = _FakePrismBackend()
-    svc._backend = fake
+    svc = SpeechService(enabled=True, backend=fake)
 
     assert svc.is_available is True
     assert svc.backend_name == "FakeNVDA"
@@ -50,9 +49,8 @@ def test_speech_service_output_and_braille() -> None:
 
 
 def test_speech_service_disabled_vs_force() -> None:
-    svc = SpeechService(enabled=False)
     fake = _FakePrismBackend()
-    svc._backend = fake
+    svc = SpeechService(enabled=False, backend=fake)
 
     assert svc.output("Background transition") is False
     assert fake.outputted == []
