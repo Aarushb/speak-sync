@@ -19,12 +19,13 @@ except ImportError:
 class SpeechService:
     """Routes speech and braille announcements directly to the active screen reader via Prism."""
 
-    def __init__(self, *, enabled: bool = True) -> None:
+    def __init__(self, *, enabled: bool = True, backend: Any = None) -> None:
         self.enabled: bool = enabled
         self._context: Any = None
-        self._backend: Any = None
+        self._backend: Any = backend
         self.last_spoken_text: str = ""
-        self._init_backend()
+        if self._backend is None:
+            self._init_backend()
 
     def _init_backend(self) -> None:
         if not _PRISM_AVAILABLE or prism is None:
