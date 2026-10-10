@@ -6,14 +6,21 @@ import ctypes
 import logging
 import platform
 import sys
+import threading
 from ctypes import wintypes
 from dataclasses import dataclass
+from typing import Any
 
-from speak_dropbox.models import TrayLocation
+from speak_dropbox.backends.base import TrayBackend
+from speak_dropbox.core.classifier import normalize_tooltip_text
+from speak_dropbox.models import TrayIconItem, TrayLocation
 
 logger = logging.getLogger(__name__)
 
 _GENERIC_ALL = 0x10000000
+_TREESCOPE_CHILDREN = 2
+_TREESCOPE_DESCENDANTS = 4
+_UIA_BUTTON_CONTROL_TYPE_ID = 50000
 
 SHELL_TRAY_CLASS = "Shell_TrayWnd"
 WIN11_OVERFLOW_XAML_CLASS = "TopLevelWindowForOverflowXamlIsland"
@@ -23,6 +30,21 @@ INPUT_SITE_CLASS = "Windows.UI.Input.InputSite.WindowClass"
 TRAY_NOTIFY_CLASS = "TrayNotifyWnd"
 SYS_PAGER_CLASS = "SysPager"
 TOOLBAR_CLASS = "ToolbarWindow32"
+
+_IGNORED_SYSTEM_BUTTON_NAMES: frozenset[str] = frozenset(
+    {
+        "start",
+        "search",
+        "task view",
+        "widgets",
+        "chat",
+        "copilot",
+        "show hidden icons",
+        "notification chevron",
+        "chevron",
+        "show desktop",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -142,7 +164,7 @@ def resolve_tray_container_hwnds() -> list[TrayContainerTarget]:
                     )
 
     # 2. Windows 11 22H2+ Hidden Overflow XAML Island (TopLevelWindowForOverflowXamlIsland)
-    # Note: FindWindowW locates this top-level window even when IsWindowVisible == 0!
+    # FindWindowW locates this top-level window even when IsWindowVisible == 0!
     overflow_xaml = user32.FindWindowW(WIN11_OVERFLOW_XAML_CLASS, None)
     if overflow_xaml:
         bridge_ov = user32.FindWindowExW(overflow_xaml, 0, CONTENT_BRIDGE_CLASS, None)
@@ -179,3 +201,187 @@ def resolve_tray_container_hwnds() -> list[TrayContainerTarget]:
             )
 
     return targets
+
+
+class _ThreadLocalUIAState(threading.local):
+    """Per-thread COM and IUIAutomation state for thread-safe tray queries."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.initialized = False
+        self.uia: Any = None
+        self.cond_notify_item: Any = None
+        self.cond_button: Any = None
+        self.cache_req: Any = None
+        self.element_cache: dict[int, Any] = {}
+
+
+class WindowsTrayBackend(TrayBackend):
+    """Queries visible and hidden overflow Windows system tray icons in the background via UIA ElementFromHandle."""
+
+    def __init__(self) -> None:
+        self._tls = _ThreadLocalUIAState()
+
+    @property
+    def platform_name(self) -> str:
+        is_w11, is_22h2, build = get_windows_build_info()
+        if is_22h2:
+            return f"Windows 11 XAML Tray & Hidden Overflow (Build {build})"
+        if is_w11:
+            return f"Windows 11 Tray & Overflow (Build {build})"
+        return f"Windows Win32/UIA Tray & Overflow (Build {build})"
+
+    def _ensure_uia(self) -> bool:
+        if sys.platform != "win32":
+            return False
+        if self._tls.initialized and self._tls.uia is not None:
+            return True
+
+        ensure_default_desktop()
+        try:
+            import comtypes
+            import comtypes.client
+
+            comtypes.CoInitialize()
+            # Generate or load UIAutomationClient type library wrapper
+            comtypes.client.GetModule("UIAutomationCore.dll")
+            from comtypes.gen import UIAutomationClient
+
+            uia = comtypes.client.CreateObject(
+                UIAutomationClient.CUIAutomation,
+                interface=UIAutomationClient.IUIAutomation,
+            )
+            cond_notify = uia.CreatePropertyCondition(
+                UIAutomationClient.UIA_AutomationIdPropertyId,
+                "NotifyItemIcon",
+            )
+            cond_button = uia.CreatePropertyCondition(
+                UIAutomationClient.UIA_ControlTypePropertyId,
+                _UIA_BUTTON_CONTROL_TYPE_ID,
+            )
+            cache_req = uia.CreateCacheRequest()
+            cache_req.AddProperty(UIAutomationClient.UIA_NamePropertyId)
+            cache_req.AddProperty(UIAutomationClient.UIA_AutomationIdPropertyId)
+
+            self._tls.uia = uia
+            self._tls.cond_notify_item = cond_notify
+            self._tls.cond_button = cond_button
+            self._tls.cache_req = cache_req
+            self._tls.element_cache = {}
+            self._tls.initialized = True
+            return True
+        except Exception as exc:
+            logger.error("Failed to initialize Windows IUIAutomation client: %s", exc)
+            return False
+
+    def _get_element_for_hwnd(self, hwnd: int) -> Any | None:
+        user32 = _get_user32()
+        if user32 is not None and not user32.IsWindow(hwnd):
+            self._tls.element_cache.pop(hwnd, None)
+            return None
+
+        cached = self._tls.element_cache.get(hwnd)
+        if cached is not None:
+            return cached
+
+        try:
+            el = self._tls.uia.ElementFromHandle(hwnd)
+            if el is not None:
+                self._tls.element_cache[hwnd] = el
+            return el
+        except Exception as exc:
+            logger.debug("ElementFromHandle(%#x) failed: %s", hwnd, exc)
+            self._tls.element_cache.pop(hwnd, None)
+            return None
+
+    def _extract_items_from_target(
+        self,
+        target: TrayContainerTarget,
+        *,
+        strip_unread_notifications: bool = False,
+    ) -> list[TrayIconItem]:
+        el = self._get_element_for_hwnd(target.hwnd)
+        if el is None:
+            return []
+
+        results: list[TrayIconItem] = []
+        try:
+            if target.container_kind == "xaml_input_site":
+                # Fast path: query direct children with AutomationId == 'NotifyItemIcon'
+                array = el.FindAllBuildCache(
+                    _TREESCOPE_CHILDREN,
+                    self._tls.cond_notify_item,
+                    self._tls.cache_req,
+                )
+                if array is None or array.Length == 0:
+                    # Fallback for pre-Moment Win11 builds: query Button children
+                    array = el.FindAllBuildCache(
+                        _TREESCOPE_CHILDREN,
+                        self._tls.cond_button,
+                        self._tls.cache_req,
+                    )
+            else:
+                array = el.FindAllBuildCache(
+                    _TREESCOPE_DESCENDANTS,
+                    self._tls.cond_button,
+                    self._tls.cache_req,
+                )
+
+            if array is not None:
+                for idx in range(array.Length):
+                    item_el = array.GetElement(idx)
+                    raw_name = item_el.CachedName or ""
+                    auto_id = item_el.CachedAutomationId or ""
+                    if not raw_name or not raw_name.strip():
+                        continue
+                    cleaned = normalize_tooltip_text(
+                        raw_name,
+                        strip_unread_notifications=strip_unread_notifications,
+                    )
+                    if not cleaned:
+                        continue
+                    if (
+                        auto_id != "NotifyItemIcon"
+                        and cleaned.lower() in _IGNORED_SYSTEM_BUTTON_NAMES
+                    ):
+                        continue
+                    results.append(
+                        TrayIconItem(
+                            raw_tooltip=raw_name,
+                            cleaned_tooltip=cleaned,
+                            location=target.location,
+                            automation_id=auto_id,
+                            hwnd=target.hwnd,
+                        )
+                    )
+        except Exception as exc:
+            logger.debug("UIA query on container %#x failed, invalidating cache: %s", target.hwnd, exc)
+            self._tls.element_cache.pop(target.hwnd, None)
+
+        return results
+
+    def get_tray_icons(self, *, strip_unread_notifications: bool = False) -> list[TrayIconItem]:
+        """Return all visible and hidden overflow system tray icons on Windows."""
+        if not self._ensure_uia():
+            return []
+
+        targets = resolve_tray_container_hwnds()
+        seen_keys: set[tuple[str, TrayLocation]] = set()
+        icons: list[TrayIconItem] = []
+
+        for target in targets:
+            extracted = self._extract_items_from_target(
+                target,
+                strip_unread_notifications=strip_unread_notifications,
+            )
+            for item in extracted:
+                dedup_key = (item.cleaned_tooltip.lower(), item.location)
+                if dedup_key not in seen_keys:
+                    seen_keys.add(dedup_key)
+                    icons.append(item)
+
+        return icons
+
+    def close(self) -> None:
+        if hasattr(self._tls, "element_cache"):
+            self._tls.element_cache.clear()
