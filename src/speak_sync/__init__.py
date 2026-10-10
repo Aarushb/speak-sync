@@ -1,4 +1,4 @@
-"""Speak Dropbox: Accessible multi-source system tray and hidden overflow sync monitor."""
+"""SpeakSync: Accessible multi-source system tray and hidden overflow sync monitor."""
 
 from __future__ import annotations
 

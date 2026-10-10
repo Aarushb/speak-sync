@@ -10,11 +10,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from speak_dropbox.models import SourceRule
+from speak_sync.models import SourceRule
 
 logger = logging.getLogger(__name__)
 
-APP_NAME = "speak_dropbox"
+APP_NAME = "speak_sync"
 
 
 def default_source_rules() -> list[SourceRule]:

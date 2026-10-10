@@ -1,4 +1,4 @@
-"""Domain models, enums, and state transition events for Speak Dropbox."""
+"""Domain models, enums, and state transition events for SpeakSync."""
 
 from __future__ import annotations
 
