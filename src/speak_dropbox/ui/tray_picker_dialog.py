@@ -7,7 +7,7 @@ import re
 import wx
 
 from speak_dropbox.models import SourceRule, TrayIconItem
-from speak_dropbox.ui.gui_helper import BoxSizerHelper
+from speak_dropbox.ui.gui_helper import BoxSizerHelper, set_accessible_name
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 
@@ -45,7 +45,6 @@ class DetectTrayIconsDialog(wx.Dialog):
             title="Add Source from Detected System Tray Icons",
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
-        self.SetSize((640, 440))
         self._icons: list[TrayIconItem] = list(icons)
         self._rescan_callback = rescan_callback
 
@@ -57,12 +56,13 @@ class DetectTrayIconsDialog(wx.Dialog):
             proportion=1,
             style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN,
         )
-        self.icon_list.InsertColumn(0, "Tray Tooltip / Application", width=440)
-        self.icon_list.InsertColumn(1, "Location", width=150)
+        self.icon_list.InsertColumn(0, "Tray Tooltip / Application", width=self.FromDIP(440))
+        self.icon_list.InsertColumn(1, "Location", width=self.FromDIP(150))
+        self.icon_list.SetMinSize(self.FromDIP(wx.Size(610, 190)))
 
         if self._rescan_callback is not None:
             self.refresh_btn = wx.Button(self, label="&Refresh Tray List")
-            self.refresh_btn.SetName("Refresh Tray List")
+            set_accessible_name(self.refresh_btn, "Refresh Tray List")
             helper.add_item(self.refresh_btn, flag=wx.LEFT | wx.RIGHT | wx.BOTTOM, border=6)
             self.refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh)
 
@@ -79,7 +79,11 @@ class DetectTrayIconsDialog(wx.Dialog):
         if btn_sizer:
             helper.add_item(btn_sizer, flag=wx.ALIGN_RIGHT | wx.ALL, border=10)
 
-        self.SetSizer(helper.sizer)
+        self.SetSizerAndFit(helper.sizer)
+        min_size = self.FromDIP(wx.Size(660, 460))
+        cur_size = self.GetSize()
+        self.SetSize(wx.Size(max(cur_size.width, min_size.width), max(cur_size.height, min_size.height)))
+        self.SetMinSize(self.GetSize())
         self.icon_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_item_selected)
         self._populate_list()
 
@@ -135,7 +139,6 @@ class CustomSourceRuleDialog(wx.Dialog):
             title=title,
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
-        self.SetSize((460, 320))
         self._existing = existing_rule
 
         helper = BoxSizerHelper(self, wx.VERTICAL)
@@ -165,7 +168,11 @@ class CustomSourceRuleDialog(wx.Dialog):
         if btn_sizer:
             helper.add_item(btn_sizer, flag=wx.ALIGN_RIGHT | wx.ALL, border=10)
 
-        self.SetSizer(helper.sizer)
+        self.SetSizerAndFit(helper.sizer)
+        min_size = self.FromDIP(wx.Size(480, 320))
+        cur_size = self.GetSize()
+        self.SetSize(wx.Size(max(cur_size.width, min_size.width), max(cur_size.height, min_size.height)))
+        self.SetMinSize(self.GetSize())
 
     def get_rule(self) -> SourceRule | None:
         display = self.name_input.GetValue().strip()

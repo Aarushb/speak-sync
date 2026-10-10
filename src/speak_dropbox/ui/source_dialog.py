@@ -11,7 +11,7 @@ from speak_dropbox.core.monitor import TrayMonitorService
 from speak_dropbox.models import SourceRule
 from speak_dropbox.services.audio import AudioCueService
 from speak_dropbox.services.hotkey import SUPPORTED_MODIFIER_PRESETS, normalize_modifier_display
-from speak_dropbox.ui.gui_helper import BoxSizerHelper, ShortcutReferenceDialog
+from speak_dropbox.ui.gui_helper import BoxSizerHelper, ShortcutReferenceDialog, set_accessible_name
 from speak_dropbox.ui.tray_picker_dialog import CustomSourceRuleDialog, DetectTrayIconsDialog
 
 
@@ -32,7 +32,6 @@ class ManageSourcesDialog(wx.Dialog):
             title="Speak Dropbox - Manage Sources & Settings",
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
-        self.SetSize((760, 540))
         self.working_config = copy.deepcopy(config)
         self.monitor = monitor
         self.audio_service = audio_service
@@ -40,7 +39,7 @@ class ManageSourcesDialog(wx.Dialog):
 
         main_helper = BoxSizerHelper(self, wx.VERTICAL)
         self.notebook = wx.Notebook(self)
-        self.notebook.SetName("Settings Categories")
+        set_accessible_name(self.notebook, "Settings Categories")
 
         self.sources_panel = self._build_sources_tab(self.notebook)
         self.speech_audio_panel = self._build_speech_audio_tab(self.notebook)
@@ -56,7 +55,7 @@ class ManageSourcesDialog(wx.Dialog):
 
         footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.shortcuts_btn = wx.Button(self, label="&Keyboard Shortcuts (F1)")
-        self.shortcuts_btn.SetName("Keyboard Shortcuts (F1)")
+        set_accessible_name(self.shortcuts_btn, "Keyboard Shortcuts (F1)")
         self.shortcuts_btn.Bind(wx.EVT_BUTTON, lambda _e: self.show_shortcut_reference())
         footer_sizer.Add(self.shortcuts_btn, 0, wx.RIGHT, 12)
         footer_sizer.AddStretchSpacer(1)
@@ -71,7 +70,11 @@ class ManageSourcesDialog(wx.Dialog):
             border=10,
         )
 
-        self.SetSizer(main_helper.sizer)
+        self.SetSizerAndFit(main_helper.sizer)
+        min_size = self.FromDIP(wx.Size(880, 560))
+        cur_size = self.GetSize()
+        self.SetSize(wx.Size(max(cur_size.width, min_size.width), max(cur_size.height, min_size.height)))
+        self.SetMinSize(self.GetSize())
         self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
         self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
         self.refresh_sources_list()
@@ -87,11 +90,12 @@ class ManageSourcesDialog(wx.Dialog):
             proportion=1,
             style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN,
         )
-        self.sources_list.InsertColumn(0, "Slot", width=70)
-        self.sources_list.InsertColumn(1, "Source Name", width=150)
-        self.sources_list.InsertColumn(2, "Enabled", width=75)
-        self.sources_list.InsertColumn(3, "Keywords", width=155)
-        self.sources_list.InsertColumn(4, "Live Tray Status", width=250)
+        self.sources_list.InsertColumn(0, "Slot", width=panel.FromDIP(70))
+        self.sources_list.InsertColumn(1, "Source Name", width=panel.FromDIP(135))
+        self.sources_list.InsertColumn(2, "Enabled", width=panel.FromDIP(70))
+        self.sources_list.InsertColumn(3, "Keywords", width=panel.FromDIP(165))
+        self.sources_list.InsertColumn(4, "Live Tray Status", width=panel.FromDIP(400))
+        self.sources_list.SetMinSize(panel.FromDIP(wx.Size(840, 210)))
 
         btn_row1 = wx.BoxSizer(wx.HORIZONTAL)
         self.add_from_tray_btn = wx.Button(panel, label="&Add from System Tray...")
@@ -105,7 +109,7 @@ class ManageSourcesDialog(wx.Dialog):
             self.edit_source_btn,
             self.toggle_source_btn,
         ):
-            btn.SetName(btn.GetLabel().replace("&", ""))
+            set_accessible_name(btn, btn.GetLabel())
             btn_row1.Add(btn, 0, wx.RIGHT, 6)
 
         btn_row2 = wx.BoxSizer(wx.HORIZONTAL)
@@ -114,7 +118,7 @@ class ManageSourcesDialog(wx.Dialog):
         self.remove_source_btn = wx.Button(panel, label="&Remove Source")
 
         for btn in (self.move_up_btn, self.move_down_btn, self.remove_source_btn):
-            btn.SetName(btn.GetLabel().replace("&", ""))
+            set_accessible_name(btn, btn.GetLabel())
             btn_row2.Add(btn, 0, wx.RIGHT, 6)
 
         helper.add_item(btn_row1, flag=wx.LEFT | wx.RIGHT | wx.TOP, border=6)
@@ -140,28 +144,29 @@ class ManageSourcesDialog(wx.Dialog):
             panel,
             "Screen Reader Speech Output (Prism)",
         )
+        speech_parent = speech_box.GetStaticBox()
         self.chk_enable_speech = wx.CheckBox(
-            panel,
+            speech_parent,
             label="&Enable screen reader speech and braille announcements",
         )
         self.chk_speak_start = wx.CheckBox(
-            panel,
+            speech_parent,
             label="Speak when syncing or indexing &starts",
         )
         self.chk_speak_finish = wx.CheckBox(
-            panel,
+            speech_parent,
             label="Speak when syncing &finishes (Up to date)",
         )
         self.chk_speak_error = wx.CheckBox(
-            panel,
+            speech_parent,
             label="Speak on sync &errors, paused, or disconnected states",
         )
         self.chk_speak_appear = wx.CheckBox(
-            panel,
+            speech_parent,
             label="Speak when monitored sources &appear or close",
         )
         self.chk_strip_unread = wx.CheckBox(
-            panel,
+            speech_parent,
             label="Strip &unread notification counts from Dropbox idle status",
         )
 
@@ -180,7 +185,7 @@ class ManageSourcesDialog(wx.Dialog):
             self.chk_speak_appear,
             self.chk_strip_unread,
         ):
-            chk.SetName(chk.GetLabel().replace("&", ""))
+            set_accessible_name(chk, chk.GetLabel())
             speech_box.Add(chk, 0, wx.ALL, 4)
 
         helper.add_item(speech_box, flag=wx.EXPAND | wx.ALL, border=8)
@@ -190,42 +195,43 @@ class ManageSourcesDialog(wx.Dialog):
             panel,
             "Three-Stage Sync Earcons (start.flac, loopty.flac, finish.flac)",
         )
+        audio_parent = audio_box.GetStaticBox()
         self.chk_enable_sounds = wx.CheckBox(
-            panel,
+            audio_parent,
             label="&Play start and finish audio cues when sync state changes",
         )
         self.chk_enable_loop = wx.CheckBox(
-            panel,
+            audio_parent,
             label="Play sustain &loop sound while syncing is active (loopty.flac)",
         )
         self.chk_enable_sounds.SetValue(self.working_config.enable_sounds)
         self.chk_enable_loop.SetValue(self.working_config.enable_loop_sound)
-        self.chk_enable_sounds.SetName(self.chk_enable_sounds.GetLabel().replace("&", ""))
-        self.chk_enable_loop.SetName(self.chk_enable_loop.GetLabel().replace("&", ""))
+        set_accessible_name(self.chk_enable_sounds, self.chk_enable_sounds.GetLabel())
+        set_accessible_name(self.chk_enable_loop, self.chk_enable_loop.GetLabel())
         audio_box.Add(self.chk_enable_sounds, 0, wx.ALL, 4)
         audio_box.Add(self.chk_enable_loop, 0, wx.ALL, 4)
 
         loop_row = wx.BoxSizer(wx.HORIZONTAL)
-        loop_lbl = wx.StaticText(panel, label="Sustain &Loop Interval (seconds):")
+        loop_lbl = wx.StaticText(audio_parent, label="Sustain &Loop Interval (seconds):")
         self.spin_loop_interval = wx.SpinCtrlDouble(
-            panel,
+            audio_parent,
             min=0.5,
             max=30.0,
             initial=self.working_config.loop_interval_seconds,
             inc=0.5,
         )
         self.spin_loop_interval.SetDigits(1)
-        self.spin_loop_interval.SetName("Sustain Loop Interval (seconds)")
+        set_accessible_name(self.spin_loop_interval, "Sustain Loop Interval (seconds)")
         loop_row.Add(loop_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         loop_row.Add(self.spin_loop_interval, 0, wx.ALIGN_CENTER_VERTICAL)
         audio_box.Add(loop_row, 0, wx.ALL, 6)
 
         test_btn_row = wx.BoxSizer(wx.HORIZONTAL)
-        self.btn_test_start = wx.Button(panel, label="Preview &Start Cue")
-        self.btn_test_loop = wx.Button(panel, label="Preview L&oop Cue")
-        self.btn_test_finish = wx.Button(panel, label="Preview &Finish Cue")
+        self.btn_test_start = wx.Button(audio_parent, label="Preview &Start Cue")
+        self.btn_test_loop = wx.Button(audio_parent, label="Preview L&oop Cue")
+        self.btn_test_finish = wx.Button(audio_parent, label="Preview &Finish Cue")
         for btn in (self.btn_test_start, self.btn_test_loop, self.btn_test_finish):
-            btn.SetName(btn.GetLabel().replace("&", ""))
+            set_accessible_name(btn, btn.GetLabel())
             test_btn_row.Add(btn, 0, wx.RIGHT, 6)
         audio_box.Add(test_btn_row, 0, wx.ALL, 6)
 
@@ -260,7 +266,7 @@ class ManageSourcesDialog(wx.Dialog):
             value=self.working_config.summary_hotkey,
         )
         _, self.manage_hotkey_input = helper.add_labeled_control(
-            "Open &Manage Sources & Settings Hotkey:",
+            "Open &Manage Sources && Settings Hotkey:",
             wx.TextCtrl,
             value=self.working_config.manage_hotkey,
         )
@@ -280,7 +286,7 @@ class ManageSourcesDialog(wx.Dialog):
             label="&Run Speak Dropbox automatically on system startup",
         )
         self.chk_run_on_startup.SetValue(self.working_config.run_on_startup)
-        self.chk_run_on_startup.SetName("Run Speak Dropbox automatically on system startup")
+        set_accessible_name(self.chk_run_on_startup, self.chk_run_on_startup.GetLabel())
         helper.add_item(self.chk_run_on_startup, flag=wx.ALL, border=8)
 
         panel.SetSizer(helper.sizer)
@@ -296,10 +302,11 @@ class ManageSourcesDialog(wx.Dialog):
             proportion=1,
             style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN,
         )
-        self.activity_list.InsertColumn(0, "Time", width=95)
-        self.activity_list.InsertColumn(1, "Source", width=130)
-        self.activity_list.InsertColumn(2, "State", width=110)
-        self.activity_list.InsertColumn(3, "Announcement", width=360)
+        self.activity_list.InsertColumn(0, "Time", width=panel.FromDIP(95))
+        self.activity_list.InsertColumn(1, "Source", width=panel.FromDIP(135))
+        self.activity_list.InsertColumn(2, "State", width=panel.FromDIP(115))
+        self.activity_list.InsertColumn(3, "Announcement", width=panel.FromDIP(420))
+        self.activity_list.SetMinSize(panel.FromDIP(wx.Size(800, 210)))
 
         btn_row = wx.BoxSizer(wx.HORIZONTAL)
         self.copy_activity_btn = wx.Button(panel, label="&Copy Selected Entry")
@@ -311,7 +318,7 @@ class ManageSourcesDialog(wx.Dialog):
             self.refresh_activity_btn,
             self.clear_activity_btn,
         ):
-            btn.SetName(btn.GetLabel().replace("&", ""))
+            set_accessible_name(btn, btn.GetLabel())
             btn_row.Add(btn, 0, wx.RIGHT, 6)
 
         helper.add_item(btn_row, flag=wx.ALL, border=6)
