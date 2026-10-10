@@ -130,7 +130,7 @@ class BoxSizerHelper:
 class ShortcutReferenceDialog(wx.Dialog):
     """Accessible dialog listing all global hotkeys and dialog keyboard shortcuts (bound to F1)."""
 
-    def __init__(self, parent: wx.Window | None, modifier: str = "Alt+Win") -> None:
+    def __init__(self, parent: wx.Window | None, modifier: str = "Alt+Shift") -> None:
         super().__init__(
             parent,
             title="Speak Dropbox Keyboard Shortcuts",
