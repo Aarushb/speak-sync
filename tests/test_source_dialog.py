@@ -37,8 +37,9 @@ def test_manage_sources_dialog_population_and_apply(wx_app: wx.App) -> None:
         on_apply_callback=lambda c: applied_configs.append(c),
     )
     try:
-        assert dlg.notebook.GetPageCount() == 3
+        assert dlg.notebook.GetPageCount() == 4
         assert dlg.sources_list.GetItemCount() == len(cfg.sources)
+        assert dlg.sources_list.GetItemCount() >= 2
         assert dlg.sources_list.GetItemText(0, 0) == "Slot 1"
         assert dlg.sources_list.GetItemText(0, 1) == "Dropbox"
         assert "Visible Tray" in dlg.sources_list.GetItemText(0, 4)
@@ -46,6 +47,11 @@ def test_manage_sources_dialog_population_and_apply(wx_app: wx.App) -> None:
         assert dlg.sources_list.GetItemText(1, 0) == "Slot 2"
         assert dlg.sources_list.GetItemText(1, 1) == "Google Drive"
         assert "Hidden Tray" in dlg.sources_list.GetItemText(1, 4)
+
+        # Activity log should have recorded the two initial appearances
+        assert dlg.activity_list.GetItemCount() == 2
+        dlg._on_clear_activity_log(wx.CommandEvent())
+        assert dlg.activity_list.GetItemCount() == 0
 
         # Move Google Drive (index 1) up to index 0
         dlg.sources_list.Select(1)
