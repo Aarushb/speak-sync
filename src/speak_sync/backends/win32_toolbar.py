@@ -12,8 +12,8 @@ import ctypes
 from ctypes import wintypes
 import sys
 
-from speak_dropbox.core.classifier import normalize_tooltip_text
-from speak_dropbox.models import TrayIconItem, TrayLocation
+from speak_sync.core.classifier import normalize_tooltip_text
+from speak_sync.models import TrayIconItem, TrayLocation
 
 TB_BUTTONCOUNT = 0x0418
 TB_GETBUTTON = 0x0417

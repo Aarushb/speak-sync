@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
-from speak_dropbox.models import TrayIconItem
+from speak_sync.models import TrayIconItem
 
 
 class TrayBackend(ABC):

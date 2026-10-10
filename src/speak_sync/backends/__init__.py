@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import sys
 
-from speak_dropbox.backends.base import StaticTrayBackend, TrayBackend
-from speak_dropbox.backends.linux import LinuxTrayBackend
-from speak_dropbox.backends.macos import MacOSTrayBackend
-from speak_dropbox.backends.windows import WindowsTrayBackend
+from speak_sync.backends.base import StaticTrayBackend, TrayBackend
+from speak_sync.backends.linux import LinuxTrayBackend
+from speak_sync.backends.macos import MacOSTrayBackend
+from speak_sync.backends.windows import WindowsTrayBackend
 
 
 def create_tray_backend(platform_override: str | None = None) -> TrayBackend:

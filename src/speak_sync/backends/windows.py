@@ -11,9 +11,9 @@ from ctypes import wintypes
 from dataclasses import dataclass
 from typing import Any
 
-from speak_dropbox.backends.base import TrayBackend
-from speak_dropbox.core.classifier import normalize_tooltip_text
-from speak_dropbox.models import TrayIconItem, TrayLocation
+from speak_sync.backends.base import TrayBackend
+from speak_sync.core.classifier import normalize_tooltip_text
+from speak_sync.models import TrayIconItem, TrayLocation
 
 logger = logging.getLogger(__name__)
 
@@ -223,7 +223,7 @@ class WindowsTrayBackend(TrayBackend):
         self._tls = _ThreadLocalUIAState()
         self._executor = ThreadPoolExecutor(
             max_workers=1,
-            thread_name_prefix="SpeakDropboxWinUIA",
+            thread_name_prefix="SpeakSyncWinUIA",
         )
 
     @property
@@ -360,7 +360,7 @@ class WindowsTrayBackend(TrayBackend):
             self._tls.element_cache.pop(target.hwnd, None)
 
         if not results and target.container_kind == "toolbar32":
-            from speak_dropbox.backends.win32_toolbar import read_toolbar_tray_icons
+            from speak_sync.backends.win32_toolbar import read_toolbar_tray_icons
 
             results = read_toolbar_tray_icons(
                 target.hwnd,

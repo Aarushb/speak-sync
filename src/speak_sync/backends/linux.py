@@ -9,9 +9,9 @@ import subprocess
 from collections.abc import Callable
 from pathlib import Path
 
-from speak_dropbox.backends.base import TrayBackend
-from speak_dropbox.core.classifier import normalize_tooltip_text
-from speak_dropbox.models import TrayIconItem, TrayLocation
+from speak_sync.backends.base import TrayBackend
+from speak_sync.core.classifier import normalize_tooltip_text
+from speak_sync.models import TrayIconItem, TrayLocation
 
 logger = logging.getLogger(__name__)
 
