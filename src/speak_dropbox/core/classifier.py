@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+from speak_dropbox.models import SyncState
+
 _REPEATED_PREFIX_RE = re.compile(r"^([^\r\n]{2,40}?)\s+\1(?=\b|\s|$|-|:)", re.IGNORECASE)
 _UNREAD_NOTIFICATIONS_RE = re.compile(
     r"\.?\s*you have \d+ unread notifications?\.?", re.IGNORECASE
@@ -11,6 +13,81 @@ _UNREAD_NOTIFICATIONS_RE = re.compile(
 _VERSION_AFTER_APP_RE = re.compile(
     r"^(dropbox|onedrive|google drive|resilio sync|nextcloud|megasync|icloud)\s+v?\d+(?:\.\d+)+(?:\s*-\s*|\s+)",
     re.IGNORECASE,
+)
+
+_ERROR_PHRASES: tuple[str, ...] = (
+    "can't sync",
+    "cannot sync",
+    "sync error",
+    "error during sync",
+    "sync issues",
+    "sync issue",
+    "storage full",
+    "out of space",
+    "action required",
+    "attention required",
+    "failed to sync",
+    " - error",
+    ": error",
+)
+
+_DISCONNECTED_PHRASES: tuple[str, ...] = (
+    "not signed in",
+    "sign-in required",
+    "sign in required",
+    "signed out",
+    "logged out",
+    "isn't connected",
+    "not connected",
+    "disconnected",
+    "offline",
+    "connecting...",
+)
+
+_PAUSED_PHRASES: tuple[str, ...] = (
+    "syncing paused",
+    "syncing is paused",
+    "synchronization paused",
+    "transfers paused",
+    " - paused",
+    ": paused",
+    "paused",
+)
+
+_INDEXING_PHRASES: tuple[str, ...] = (
+    "indexing",
+    "preparing to sync",
+    "preparing sync",
+    "processing changes",
+    "looking for changes",
+    "checking for changes",
+    "scanning files",
+    "scanning",
+    "loading...",
+    "starting...",
+    "updating...",
+)
+
+_SYNCING_PHRASES: tuple[str, ...] = (
+    "syncing",
+    "uploading",
+    "downloading",
+    "transferring",
+    "mb/sec",
+    "kb/sec",
+    "secs left",
+    "mins left",
+    "remaining",
+)
+
+_IDLE_PHRASES: tuple[str, ...] = (
+    "up to date",
+    "everything is up to date",
+    "all files are in sync",
+    "files are in sync",
+    "synced",
+    " - idle",
+    ": idle",
 )
 
 
@@ -58,6 +135,34 @@ def normalize_tooltip_text(
     if strip_unread_notifications:
         cleaned = _UNREAD_NOTIFICATIONS_RE.sub("", cleaned).strip(" -.")
     return cleaned
+
+
+def classify_sync_state(tooltip_text: str) -> SyncState:
+    """Classify normalized or raw tooltip text into a semantic SyncState."""
+    if not tooltip_text or not tooltip_text.strip():
+        return SyncState.UNKNOWN
+
+    lower = tooltip_text.lower()
+
+    if any(phrase in lower for phrase in _ERROR_PHRASES):
+        return SyncState.ERROR
+
+    if any(phrase in lower for phrase in _DISCONNECTED_PHRASES):
+        return SyncState.DISCONNECTED
+
+    if any(phrase in lower for phrase in _PAUSED_PHRASES):
+        return SyncState.PAUSED
+
+    if any(phrase in lower for phrase in _INDEXING_PHRASES):
+        return SyncState.INDEXING
+
+    if any(phrase in lower for phrase in _SYNCING_PHRASES):
+        return SyncState.SYNCING
+
+    if any(phrase in lower for phrase in _IDLE_PHRASES):
+        return SyncState.IDLE
+
+    return SyncState.UNKNOWN
 
 
 def format_spoken_status(display_name: str, cleaned_tooltip: str) -> str:
