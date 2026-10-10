@@ -121,6 +121,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.list_tray or args.status or args.slot is not None:
         return run_cli_one_shot(args)
 
+    if sys.platform == "win32":
+        from speak_dropbox.backends.windows import ensure_default_desktop
+
+        ensure_default_desktop()
+
     import wx
     from speak_dropbox.app import SpeakDropboxController
 
