@@ -19,8 +19,8 @@ Beyond Dropbox, Speak Dropbox monitors **Google Drive**, **Microsoft OneDrive**,
 - **Multi-Source Cloud Presets & Custom Rules**: Ships with built-in matching rules for Dropbox, Google Drive, OneDrive, Resilio Sync, iCloud, Nextcloud, Syncthing, and MEGAsync. You can also scan your live system tray to add any running application in two keystrokes.
 - **Direct Screen Reader Speech & Braille (Prism)**: Announces status transitions and on-demand slot queries directly through your active screen reader (NVDA, JAWS, Windows Narrator, ZDSR, VoiceOver, or Orca) with automatic SAPI / AVSpeech / Speech Dispatcher fallback via [Prism (`prismatoid`)](https://pypi.org/project/prismatoid/).
 - **Three-Stage Sync Earcons**: Plays distinct spatial audio cues (`start.flac` when syncing or indexing begins, a gentle periodic `loopty.flac` pulse while transfers remain active, and `finish.flac` when all active sources return to idle).
-- **Global Slot Hotkeys (`Alt+Win+1` .. `9`)**: Query individual monitored sources from any application. Double-pressing a slot hotkey within 500 ms copies that source's exact status text to the clipboard.
-- **Accessible System Tray Menu & Settings Dialog**: Right-click the Speak Dropbox tray icon (or press `Alt+Win+M`) to inspect active sources, open a provider's local sync folder in your file manager, reorder slots, preview audio cues, or review the timestamped Sync Activity Log.
+- **Global Slot Hotkeys (`Alt+Shift+1` .. `9`)**: Query individual monitored sources from any application using the number row. Double-pressing a slot hotkey within 500 ms copies that source's exact status text to the clipboard.
+- **Accessible System Tray Menu & Settings Dialog**: Right-click the Speak Dropbox tray icon (or press `Alt+Shift+M`) to inspect active sources, open a provider's local sync folder in your file manager, reorder slots, preview audio cues, or review the timestamped Sync Activity Log.
 
 ---
 
@@ -96,14 +96,14 @@ You can also query your cloud sync status from a terminal or script without keep
 
 ## Keyboard Shortcuts
 
-All global hotkeys work from any application while Speak Dropbox is running in the background. You can change the global modifier prefix (`Alt+Win`, `Ctrl+Shift+Win`, `Ctrl+Alt+Shift`, or `Alt+Shift`) in the **Hotkeys & General** tab.
+All global hotkeys work from any application while Speak Dropbox is running in the background. You can remap any combination of modifier keys (`Alt`, `Shift`, `Ctrl`, `Win`) using the preset dropdown or the individual modifier checkboxes in the **Hotkeys & General** tab while the number row (`1` through `9` and `0`) remains fixed.
 
 | Shortcut | Context | Action |
 | :--- | :--- | :--- |
-| `Alt+Win+1` .. `Alt+Win+9` | Global (Anywhere) | Speak the status of monitored source in Slot 1 through 9 |
-| `Alt+Win+1` .. `9` (Double-Press) | Global (Anywhere) | Copy Slot 1 through 9 status text to the clipboard and announce confirmation |
-| `Alt+Win+0` | Global (Anywhere) | Speak a combined summary of all active monitored sources |
-| `Alt+Win+M` | Global (Anywhere) | Open the Manage Sources & Settings dialog |
+| `Alt+Shift+1` .. `Alt+Shift+9` | Global (Anywhere) | Speak the status of monitored source in Slot 1 through 9 |
+| `Alt+Shift+1` .. `9` (Double-Press) | Global (Anywhere) | Copy Slot 1 through 9 status text to the clipboard and announce confirmation |
+| `Alt+Shift+0` | Global (Anywhere) | Speak a combined summary of all active monitored sources |
+| `Alt+Shift+M` | Global (Anywhere) | Open the Manage Sources & Settings dialog |
 | `F1` | Inside Any Dialog | Open the Keyboard Shortcuts Reference dialog |
 | `Escape` | Inside Any Dialog | Cancel and close the active dialog |
 
@@ -130,7 +130,7 @@ flowchart LR
     subgraph Output["User Feedback & Controls"]
         Prism["Prism Screen Reader\nSpeech & Braille"]
         Audio["3-Stage Earcon Engine\n(start / loopty / finish.flac)"]
-        Hotkeys["Global Slot Hotkeys\n(Alt+Win+1..9, 0, M)"]
+        Hotkeys["Global Slot Hotkeys\n(Alt+Shift+1..9, 0, M)"]
         TrayUI["Accessible wxPython\nTray Menu & Settings GUI"]
     end
 
@@ -169,11 +169,11 @@ flowchart LR
 
 Settings are saved automatically in JSON format at:
 
-- **Windows**: `%APPDATA%\SpeakDropbox\config.json`
-- **macOS**: `~/Library/Application Support/SpeakDropbox/config.json`
+- **Windows**: `%APPDATA%\speak_dropbox\config.json`
+- **macOS**: `~/Library/Application Support/speak_dropbox/config.json`
 - **Linux**: `~/.config/speak_dropbox/config.json`
 
-You can edit every setting through the **Manage Sources & Settings** dialog (`Alt+Win+M`) or pass a custom path via `--config path/to/config.json`.
+You can edit every setting through the **Manage Sources & Settings** dialog (`Alt+Shift+M`) or pass a custom path via `--config path/to/config.json`.
 
 ---
 
