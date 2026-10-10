@@ -1,4 +1,4 @@
-"""Unit tests for GlobalHotkeyService, hotkey parsing, and double-press detection."""
+"""Unit tests for GlobalHotkeyService, hotkey parsing, modifier remapping, and double-press detection."""
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ from speak_dropbox.services.hotkey import (
     MOD_SHIFT,
     MOD_WIN,
     GlobalHotkeyService,
+    flags_to_modifier,
+    modifier_to_flags,
     normalize_modifier_display,
     parse_hotkey_spec,
     to_pynput_combo,
@@ -15,16 +17,25 @@ from speak_dropbox.services.hotkey import (
 
 
 def test_parse_hotkey_spec_and_pynput_conversion() -> None:
-    assert parse_hotkey_spec("Alt+Win+1") == (MOD_ALT | MOD_WIN, ord("1"))
+    assert parse_hotkey_spec("Alt+Shift+1") == (MOD_ALT | MOD_SHIFT, ord("1"))
+    assert parse_hotkey_spec("Alt+Shift+!") == (MOD_ALT | MOD_SHIFT, ord("1"))
     assert parse_hotkey_spec("<ctrl>+<shift>+<cmd>+m") == (
         MOD_CONTROL | MOD_SHIFT | MOD_WIN,
         ord("M"),
     )
     assert parse_hotkey_spec("invalid") is None
 
-    assert to_pynput_combo("Alt+Win+1") == "<alt>+<cmd>+1"
+    assert to_pynput_combo("Alt+Shift+1") == "<alt>+<shift>+1"
     assert to_pynput_combo("Ctrl+Shift+Win+M") == "<ctrl>+<shift>+<cmd>+m"
-    assert normalize_modifier_display("<alt>+<cmd>") == "Alt+Win"
+    assert normalize_modifier_display("<alt>+<shift>") == "Alt+Shift"
+    assert normalize_modifier_display("") == "Alt+Shift"
+
+
+def test_modifier_flag_roundtrip() -> None:
+    assert modifier_to_flags("Alt+Shift") == (False, True, True, False)
+    assert modifier_to_flags("Ctrl+Alt+Shift") == (True, True, True, False)
+    assert flags_to_modifier(ctrl=True, alt=True, shift=False, win=False) == "Ctrl+Alt"
+    assert flags_to_modifier() == "Alt+Shift"
 
 
 def test_global_hotkey_service_single_and_double_press() -> None:
@@ -38,11 +49,17 @@ def test_global_hotkey_service_single_and_double_press() -> None:
         on_manage_hotkey=lambda: manage_calls.append(1),
     )
 
-    bindings = svc.build_hotkey_map("Alt+Win", "Alt+Win+0", "Alt+Win+M")
-    assert "Alt+Win+1" in bindings
-    assert "Alt+Win+9" in bindings
-    assert "Alt+Win+0" in bindings
-    assert "Alt+Win+M" in bindings
+    bindings = svc.build_hotkey_map()
+    assert "Alt+Shift+1" in bindings
+    assert "Alt+Shift+9" in bindings
+    assert "Alt+Shift+0" in bindings
+    assert "Alt+Shift+M" in bindings
+
+    # Remap modifier to Ctrl+Alt+Shift while number row 1-9 and 0 remain fixed
+    remapped = svc.build_hotkey_map("Ctrl+Alt+Shift", "Alt+Shift+0", "Ctrl+Alt+Shift+M")
+    assert "Ctrl+Alt+Shift+1" in remapped
+    assert "Ctrl+Alt+Shift+9" in remapped
+    assert "Ctrl+Alt+Shift+0" in remapped
 
     # First press at t=10.0 -> single press (is_double=False)
     assert svc.handle_slot_trigger(1, now=10.0) is False
