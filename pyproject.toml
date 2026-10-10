@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "speak-dropbox"
+name = "speak-sync"
 version = "0.1.0"
-description = "Accessible multi-source system tray and hidden overflow cloud sync monitor with Prism screen reader speech, 3-stage audio cues, and global slot hotkeys."
+description = "SpeakSync: Accessible multi-source system tray and hidden overflow cloud sync monitor with Prism screen reader speech, 3-stage audio cues, and global slot hotkeys."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -40,13 +40,13 @@ test = [
 ]
 
 [project.scripts]
-speak-dropbox = "speak_dropbox.__main__:main"
+speak-sync = "speak_sync.__main__:main"
 
 [project.gui-scripts]
-speak-dropbox-gui = "speak_dropbox.__main__:main"
+speak-sync-gui = "speak_sync.__main__:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/speak_dropbox"]
+packages = ["src/speak_sync"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
