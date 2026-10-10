@@ -7,7 +7,7 @@ from collections.abc import Generator
 import pytest
 
 if sys.platform == "win32":
-    from speak_dropbox.backends.windows import ensure_default_desktop
+    from speak_sync.backends.windows import ensure_default_desktop
 
     ensure_default_desktop()
 

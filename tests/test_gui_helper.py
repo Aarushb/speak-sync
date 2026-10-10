@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import wx
-from speak_dropbox.ui.gui_helper import BoxSizerHelper, ShortcutReferenceDialog
+from speak_sync.ui.gui_helper import BoxSizerHelper, ShortcutReferenceDialog
 
 
 def test_box_sizer_helper_labeled_control(wx_app: wx.App) -> None:

@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import wx
-from speak_dropbox.models import TrayIconItem, TrayLocation
-from speak_dropbox.ui.tray_picker_dialog import (
+from speak_sync.models import TrayIconItem, TrayLocation
+from speak_sync.ui.tray_picker_dialog import (
     CustomSourceRuleDialog,
     DetectTrayIconsDialog,
     infer_app_name_and_keyword,

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from speak_dropbox.core.folders import (
+from speak_sync.core.folders import (
     open_sync_folder,
     resolve_dropbox_folder,
     resolve_google_drive_folder,

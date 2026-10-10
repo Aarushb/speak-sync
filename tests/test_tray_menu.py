@@ -1,13 +1,13 @@
-"""Unit tests for SpeakDropboxTrayIcon context menu construction and actions."""
+"""Unit tests for SpeakSyncTrayIcon context menu construction and actions."""
 
 from __future__ import annotations
 
 import wx
-from speak_dropbox.backends.base import StaticTrayBackend
-from speak_dropbox.config import AppConfig
-from speak_dropbox.core.monitor import TrayMonitorService
-from speak_dropbox.models import TrayIconItem, TrayLocation
-from speak_dropbox.ui.tray import SpeakDropboxTrayIcon
+from speak_sync.backends.base import StaticTrayBackend
+from speak_sync.config import AppConfig
+from speak_sync.core.monitor import TrayMonitorService
+from speak_sync.models import TrayIconItem, TrayLocation
+from speak_sync.ui.tray import SpeakSyncTrayIcon
 
 
 def test_tray_icon_context_menu_and_actions(wx_app: wx.App) -> None:
@@ -35,7 +35,7 @@ def test_tray_icon_context_menu_and_actions(wx_app: wx.App) -> None:
     monitor.poll()
 
     mutations: list[int] = []
-    tray = SpeakDropboxTrayIcon(
+    tray = SpeakSyncTrayIcon(
         config=cfg,
         monitor=monitor,
         on_speak_slot=lambda _s: None,

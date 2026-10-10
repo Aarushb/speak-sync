@@ -1,4 +1,4 @@
-"""Integration tests for SpeakDropboxController and CLI entrypoint."""
+"""Integration tests for SpeakSyncController and CLI entrypoint."""
 
 from __future__ import annotations
 
@@ -6,13 +6,13 @@ from pathlib import Path
 import pytest
 import wx
 
-from speak_dropbox.__main__ import build_arg_parser, run_cli_one_shot
-from speak_dropbox.app import SpeakDropboxController
-from speak_dropbox.backends.base import StaticTrayBackend
-from speak_dropbox.config import AppConfig
-from speak_dropbox.models import TrayIconItem, TrayLocation
-from speak_dropbox.services.audio import AudioCueService
-from speak_dropbox.services.speech import SpeechService
+from speak_sync.__main__ import build_arg_parser, run_cli_one_shot
+from speak_sync.app import SpeakSyncController
+from speak_sync.backends.base import StaticTrayBackend
+from speak_sync.config import AppConfig
+from speak_sync.models import TrayIconItem, TrayLocation
+from speak_sync.services.audio import AudioCueService
+from speak_sync.services.speech import SpeechService
 
 
 class _RecorderBackend:
@@ -49,7 +49,7 @@ def test_controller_end_to_end_transitions(wx_app: wx.App, tmp_path: Path) -> No
     played_cues: list[str] = []
     audio = AudioCueService(cfg, player_fn=lambda p: (played_cues.append(p.name), True)[1])
 
-    ctrl = SpeakDropboxController(
+    ctrl = SpeakSyncController(
         config=cfg,
         config_path=tmp_path / "config.json",
         backend=backend,

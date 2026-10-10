@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from speak_dropbox.core.local_adapters import (
+from speak_sync.core.local_adapters import (
     enrich_bare_cloud_tooltip,
     parse_drivefs_log_tail,
     parse_onedrive_diagnostics_tail,

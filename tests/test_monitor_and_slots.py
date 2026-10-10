@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from speak_dropbox.backends.base import StaticTrayBackend
-from speak_dropbox.config import AppConfig
-from speak_dropbox.core.monitor import TrayMonitorService
-from speak_dropbox.models import (
+from speak_sync.backends.base import StaticTrayBackend
+from speak_sync.config import AppConfig
+from speak_sync.core.monitor import TrayMonitorService
+from speak_sync.models import (
     ChangeType,
     SourceRule,
     SyncState,
@@ -24,7 +24,7 @@ def test_monitor_slot_assignment_and_queries() -> None:
             _make_icon("Dropbox 274.4.4841 - Up to date", TrayLocation.VISIBLE),
             _make_icon("Google Drive - Everything is up to date", TrayLocation.OVERFLOW),
             _make_icon("Discord", TrayLocation.OVERFLOW),
-            _make_icon("Speak Dropbox - 2 sources up to date", TrayLocation.VISIBLE),
+            _make_icon("SpeakSync - 2 sources up to date", TrayLocation.VISIBLE),
         ]
     )
     cfg = AppConfig()

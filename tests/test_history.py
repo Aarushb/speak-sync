@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from speak_dropbox.core.history import SyncActivityLog
-from speak_dropbox.models import ChangeType, StateChangeEvent, SyncState, TrayLocation
+from speak_sync.core.history import SyncActivityLog
+from speak_sync.models import ChangeType, StateChangeEvent, SyncState, TrayLocation
 
 
 def test_sync_activity_log_records_and_orders_newest_first() -> None:

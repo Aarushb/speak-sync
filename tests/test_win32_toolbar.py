@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import ctypes
 
-from speak_dropbox.backends.win32_toolbar import (
+from speak_sync.backends.win32_toolbar import (
     TBBUTTON64,
     parse_utf16_buffer,
     read_toolbar_tray_icons,
 )
-from speak_dropbox.models import TrayLocation
+from speak_sync.models import TrayLocation
 
 
 def test_parse_utf16_buffer_extracts_null_terminated_string() -> None:

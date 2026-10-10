@@ -1,4 +1,4 @@
-"""Live Windows UI Automation (IUIAutomation) accessibility tree audit for all Speak Dropbox dialogs."""
+"""Live Windows UI Automation (IUIAutomation) accessibility tree audit for all SpeakSync dialogs."""
 
 from __future__ import annotations
 
@@ -8,13 +8,13 @@ from typing import Any
 import pytest
 import wx
 
-from speak_dropbox.backends.base import StaticTrayBackend
-from speak_dropbox.config import AppConfig
-from speak_dropbox.core.monitor import TrayMonitorService
-from speak_dropbox.models import TrayIconItem, TrayLocation
-from speak_dropbox.ui.gui_helper import ShortcutReferenceDialog
-from speak_dropbox.ui.source_dialog import ManageSourcesDialog
-from speak_dropbox.ui.tray_picker_dialog import CustomSourceRuleDialog, DetectTrayIconsDialog
+from speak_sync.backends.base import StaticTrayBackend
+from speak_sync.config import AppConfig
+from speak_sync.core.monitor import TrayMonitorService
+from speak_sync.models import TrayIconItem, TrayLocation
+from speak_sync.ui.gui_helper import ShortcutReferenceDialog
+from speak_sync.ui.source_dialog import ManageSourcesDialog
+from speak_sync.ui.tray_picker_dialog import CustomSourceRuleDialog, DetectTrayIconsDialog
 
 pytestmark = pytest.mark.skipif(
     sys.platform != "win32",
@@ -149,7 +149,7 @@ def test_manage_sources_dialog_live_uia_tree_all_tabs(wx_app: wx.App) -> None:
         dlg.notebook.SetSelection(0)
         wx.SafeYield()
         win_name, tab0_nodes = snapshot_dialog_uia_controls(dlg)
-        assert win_name == "Speak Dropbox - Manage Sources & Settings"
+        assert win_name == "SpeakSync - Manage Sources & Settings"
         assert_all_interactive_controls_labeled(tab0_nodes, "ManageSourcesDialog Tab 0")
         assert_expected_focusable_controls(
             tab0_nodes,
@@ -219,7 +219,7 @@ def test_manage_sources_dialog_live_uia_tree_all_tabs(wx_app: wx.App) -> None:
                 (UIA_EDIT, "Open Manage Sources & Settings Hotkey"),
                 (UIA_EDIT, "System Tray Background Poll Interval (seconds)"),
                 (UIA_SPINNER, "System Tray Background Poll Interval (seconds)"),
-                (UIA_CHECKBOX, "Run Speak Dropbox automatically on system startup"),
+                (UIA_CHECKBOX, "Run SpeakSync automatically on system startup"),
             ],
             "ManageSourcesDialog Tab 2",
         )
@@ -308,7 +308,7 @@ def test_shortcut_reference_dialog_and_f1_keyboard_navigation(wx_app: wx.App) ->
         dlg.Show()
         wx.SafeYield()
         win_name, nodes = snapshot_dialog_uia_controls(dlg)
-        assert win_name == "Speak Dropbox Keyboard Shortcuts"
+        assert win_name == "SpeakSync Keyboard Shortcuts"
         assert_all_interactive_controls_labeled(nodes, "ShortcutReferenceDialog")
         assert_expected_focusable_controls(
             nodes,
@@ -345,6 +345,6 @@ def test_shortcut_reference_dialog_and_f1_keyboard_navigation(wx_app: wx.App) ->
         f1_event = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
         f1_event.SetKeyCode(wx.WXK_F1)
         manage_dlg._on_char_hook(f1_event)
-        assert captured_f1_dialog_titles == ["Speak Dropbox Keyboard Shortcuts"]
+        assert captured_f1_dialog_titles == ["SpeakSync Keyboard Shortcuts"]
     finally:
         manage_dlg.Destroy()

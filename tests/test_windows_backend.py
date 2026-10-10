@@ -6,13 +6,13 @@ import sys
 import time
 import pytest
 
-from speak_dropbox.backends.windows import (
+from speak_sync.backends.windows import (
     WindowsTrayBackend,
     ensure_default_desktop,
     get_windows_build_info,
     resolve_tray_container_hwnds,
 )
-from speak_dropbox.models import TrayLocation
+from speak_sync.models import TrayLocation
 
 pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="Windows-only tray backend tests")
 
@@ -46,12 +46,12 @@ def test_windows_tray_backend_live_hidden_overflow_icon_lifecycle() -> None:
 
     wc = win32gui.WNDCLASS()
     wc.hInstance = win32gui.GetModuleHandle(None)
-    wc.lpszClassName = "SpeakDropboxLiveOverflowTestWnd"
+    wc.lpszClassName = "SpeakSyncLiveOverflowTestWnd"
     wc.lpfnWndProc = {win32con.WM_DESTROY: lambda h, m, w, l: 0}
     atom = win32gui.RegisterClass(wc)
     hwnd = win32gui.CreateWindow(
         atom,
-        "SpeakDropboxLiveOverflowTestWnd",
+        "SpeakSyncLiveOverflowTestWnd",
         0,
         0,
         0,
@@ -72,7 +72,7 @@ def test_windows_tray_backend_live_hidden_overflow_icon_lifecycle() -> None:
             win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP,
             win32con.WM_USER + 42,
             hicon,
-            "SpeakDropboxHiddenProbe\nIndexing 12 files...",
+            "SpeakSyncHiddenProbe\nIndexing 12 files...",
         )
         win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, nid_add)
 
@@ -81,7 +81,7 @@ def test_windows_tray_backend_live_hidden_overflow_icon_lifecycle() -> None:
             time.sleep(0.1)
             icons = backend.get_tray_icons()
             for item in icons:
-                if "SpeakDropboxHiddenProbe" in item.cleaned_tooltip:
+                if "SpeakSyncHiddenProbe" in item.cleaned_tooltip:
                     matched = item
                     break
             if matched is not None:
@@ -98,7 +98,7 @@ def test_windows_tray_backend_live_hidden_overflow_icon_lifecycle() -> None:
             win32gui.NIF_TIP,
             win32con.WM_USER + 42,
             hicon,
-            "SpeakDropboxHiddenProbe\nUp to date",
+            "SpeakSyncHiddenProbe\nUp to date",
         )
         win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, nid_mod)
 
@@ -108,7 +108,7 @@ def test_windows_tray_backend_live_hidden_overflow_icon_lifecycle() -> None:
             icons = backend.get_tray_icons()
             for item in icons:
                 if (
-                    "SpeakDropboxHiddenProbe" in item.cleaned_tooltip
+                    "SpeakSyncHiddenProbe" in item.cleaned_tooltip
                     and "Up to date" in item.cleaned_tooltip
                 ):
                     updated = item

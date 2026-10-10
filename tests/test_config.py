@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from speak_dropbox.config import AppConfig, default_source_rules
-from speak_dropbox.models import SourceRule
+from speak_sync.config import AppConfig, default_source_rules
+from speak_sync.models import SourceRule
 
 
 def test_default_source_rules() -> None:

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from speak_dropbox.core.classifier import (
+from speak_sync.core.classifier import (
     classify_sync_state,
     deduplicate_win11_prefix,
     format_spoken_status,
     normalize_tooltip_text,
 )
-from speak_dropbox.models import SyncState
+from speak_sync.models import SyncState
 
 
 def test_deduplicate_win11_prefix() -> None:
@@ -34,9 +34,9 @@ def test_deduplicate_win11_prefix() -> None:
     )
     assert (
         deduplicate_win11_prefix(
-            "SpeakDropboxHiddenProbe\nIndexing 12 files... SpeakDropboxHiddenProbe\nUp to date"
+            "SpeakSyncHiddenProbe\nIndexing 12 files... SpeakSyncHiddenProbe\nUp to date"
         )
-        == "SpeakDropboxHiddenProbe\nUp to date"
+        == "SpeakSyncHiddenProbe\nUp to date"
     )
 
 

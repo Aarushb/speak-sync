@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import wx
-from speak_dropbox.backends.base import StaticTrayBackend
-from speak_dropbox.config import AppConfig
-from speak_dropbox.core.monitor import TrayMonitorService
-from speak_dropbox.models import TrayIconItem, TrayLocation
-from speak_dropbox.ui.source_dialog import ManageSourcesDialog
+from speak_sync.backends.base import StaticTrayBackend
+from speak_sync.config import AppConfig
+from speak_sync.core.monitor import TrayMonitorService
+from speak_sync.models import TrayIconItem, TrayLocation
+from speak_sync.ui.source_dialog import ManageSourcesDialog
 
 
 def test_manage_sources_dialog_population_and_apply(wx_app: wx.App) -> None:

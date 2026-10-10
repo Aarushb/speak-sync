@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from speak_dropbox.services.hotkey import (
+from speak_sync.services.hotkey import (
     MOD_ALT,
     MOD_CONTROL,
     MOD_SHIFT,

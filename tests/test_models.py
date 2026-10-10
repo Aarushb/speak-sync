@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from speak_dropbox.models import (
+from speak_sync.models import (
     ChangeType,
     MonitoredSourceStatus,
     SourceRule,

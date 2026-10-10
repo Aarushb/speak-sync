@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from speak_dropbox.backends import (
+from speak_sync.backends import (
     LinuxTrayBackend,
     MacOSTrayBackend,
     StaticTrayBackend,
     WindowsTrayBackend,
     create_tray_backend,
 )
-from speak_dropbox.backends.linux import parse_sni_registered_items
-from speak_dropbox.backends.macos import parse_macos_ax_menu_bar_lines
-from speak_dropbox.models import TrayIconItem, TrayLocation
+from speak_sync.backends.linux import parse_sni_registered_items
+from speak_sync.backends.macos import parse_macos_ax_menu_bar_lines
+from speak_sync.models import TrayIconItem, TrayLocation
 
 
 def test_create_tray_backend_factory() -> None:

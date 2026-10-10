@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from speak_dropbox.services.speech import SpeechService
+from speak_sync.services.speech import SpeechService
 
 
 class _FakePrismBackend:

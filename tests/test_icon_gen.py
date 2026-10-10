@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import wx
-from speak_dropbox.ui.icon_gen import create_tray_bitmap, create_tray_icon
+from speak_sync.ui.icon_gen import create_tray_bitmap, create_tray_icon
 
 
 def test_create_tray_icons_for_all_modes(wx_app: wx.App) -> None:

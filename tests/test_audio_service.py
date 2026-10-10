@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from speak_dropbox.config import AppConfig
-from speak_dropbox.services.audio import AudioCueService, resolve_cue_file
+from speak_sync.config import AppConfig
+from speak_sync.services.audio import AudioCueService, resolve_cue_file
 
 
 def test_resolve_bundled_cue_files() -> None:
