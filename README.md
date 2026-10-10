@@ -30,6 +30,8 @@ Beyond Dropbox, SpeakSync monitors **Google Drive**, **Microsoft OneDrive**, **R
 
 ![SpeakSync Manage Sources and Settings dialog open to the Speech and Audio Cues tab, showing checkboxes for Prism screen reader speech announcements and Three-Stage Sync Earcon controls with a 2.6 second sustain loop interval and preview buttons for Start, Loop, and Finish cues.](docs/images/speech_audio_tab.png)
 
+![SpeakSync Manage Sources and Settings dialog open to the Hotkeys and General tab, showing Alt+Shift selected as the global slot hotkey modifier, individual checkboxes to remap Ctrl, Alt, Shift, and Win modifiers while the number row 1-9 and 0 remain fixed, and fields for Alt+Shift+0 summary and Alt+Shift+M manage hotkeys.](docs/images/hotkeys_general_tab.png)
+
 ![Add Source from Detected System Tray Icons dialog listing live applications from both the Hidden Tray and Visible Tray, including pCloud Drive, Proton Drive, Dropbox, Google Drive, and Tailscale, with auto-populated display name and keyword fields.](docs/images/detect_tray_icons.png)
 
 ---
