@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "speak-dropbox"
+version = "0.1.0"
+description = "Accessible multi-source system tray and hidden overflow cloud sync monitor with Prism screen reader speech, 3-stage audio cues, and global slot hotkeys."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Aarush Bhatnagar" }
+]
+keywords = [
+    "accessibility",
+    "a11y",
+    "screen-reader",
+    "nvda",
+    "jaws",
+    "dropbox",
+    "google-drive",
+    "onedrive",
+    "system-tray",
+    "prism",
+]
+dependencies = [
+    "wxpython>=4.2.1",
+    "prismatoid>=0.18.0",
+    "soundobj>=0.3.0",
+    "pynput>=1.7.7",
+    "comtypes>=1.4.0; sys_platform == 'win32'",
+    "pywin32>=306; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0.0",
+    "pillow>=10.0.0",
+]
+
+[project.scripts]
+speak-dropbox = "speak_dropbox.__main__:main"
+
+[project.gui-scripts]
+speak-dropbox-gui = "speak_dropbox.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/speak_dropbox"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
