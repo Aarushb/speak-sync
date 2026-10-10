@@ -7,6 +7,9 @@ import re
 from speak_dropbox.models import SyncState
 
 _REPEATED_PREFIX_RE = re.compile(r"^([^\r\n]{2,40}?)\s+\1(?=\b|\s|$|-|:)", re.IGNORECASE)
+_APP_HEADER_RE = re.compile(
+    r"^([A-Za-z0-9][A-Za-z0-9 ._-]{2,35}?)(?=\s*(?:\r?\n|\s-\s|:\s))",
+)
 _UNREAD_NOTIFICATIONS_RE = re.compile(
     r"\.?\s*you have \d+ unread notifications?\.?", re.IGNORECASE
 )
@@ -92,10 +95,28 @@ _IDLE_PHRASES: tuple[str, ...] = (
 
 
 def deduplicate_win11_prefix(raw_text: str) -> str:
-    """Remove duplicated leading prefix added by Windows 11 XAML NotifyItemIcon."""
+    """Remove duplicated leading InitialTooltip prefix added by Windows 11 XAML NotifyItemIcon."""
     text = raw_text.strip()
     if not text:
         return ""
+
+    # Case 1: InitialTooltip was a full multi-line or 'App - Status' string followed by
+    # CurrentTooltip starting with the same App header (e.g. 'App\nOldStatus App\nNewStatus'
+    # or 'Windows Security - No actions needed. Windows Security - Actions recommended.').
+    header_match = _APP_HEADER_RE.match(text)
+    if header_match:
+        app_header = header_match.group(1).strip()
+        if len(app_header) >= 3:
+            second_occurrence = re.search(
+                r"(?<=\s)" + re.escape(app_header) + r"(?=\s*(?:\r?\n|\s-\s|:\s|$))",
+                text[len(app_header) :],
+                flags=re.IGNORECASE,
+            )
+            if second_occurrence:
+                start_idx = len(app_header) + second_occurrence.start()
+                return text[start_idx:].strip()
+
+    # Case 2: InitialTooltip was just 'AppName' immediately followed by 'AppName ...'
     match = _REPEATED_PREFIX_RE.match(text)
     if match:
         prefix = match.group(1)
