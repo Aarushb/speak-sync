@@ -28,35 +28,74 @@ MOD_WIN = 0x0008
 DOUBLE_PRESS_THRESHOLD_SECONDS = 0.45
 
 SUPPORTED_MODIFIER_PRESETS: tuple[str, ...] = (
+    "Alt+Shift",
+    "Ctrl+Alt+Shift",
+    "Ctrl+Shift",
+    "Ctrl+Alt",
     "Alt+Win",
     "Ctrl+Shift+Win",
-    "Ctrl+Alt+Shift",
-    "Alt+Shift",
-    "Ctrl+Alt",
+    "Ctrl+Win",
+    "Shift+Win",
 )
 
+_SHIFTED_NUMBER_ROW_MAP: dict[str, str] = {
+    "!": "1",
+    "@": "2",
+    "#": "3",
+    "$": "4",
+    "%": "5",
+    "^": "6",
+    "&": "7",
+    "*": "8",
+    "(": "9",
+    ")": "0",
+}
 
-def normalize_modifier_display(modifier_str: str) -> str:
-    """Normalize a modifier string into canonical Title+Case form (e.g. 'Alt+Win')."""
+
+def modifier_to_flags(modifier_str: str) -> tuple[bool, bool, bool, bool]:
+    """Parse a modifier string into (ctrl, alt, shift, win) boolean flags."""
     tokens = [
         t.strip().strip("<>").lower()
         for t in modifier_str.replace("-", "+").split("+")
         if t.strip()
     ]
+    has_ctrl = any(t in ("ctrl", "control") for t in tokens)
+    has_alt = "alt" in tokens
+    has_shift = "shift" in tokens
+    has_win = any(t in ("win", "cmd", "super", "meta") for t in tokens)
+    if not (has_ctrl or has_alt or has_shift or has_win):
+        return (False, True, True, False)
+    return (has_ctrl, has_alt, has_shift, has_win)
+
+
+def flags_to_modifier(
+    *,
+    ctrl: bool = False,
+    alt: bool = False,
+    shift: bool = False,
+    win: bool = False,
+) -> str:
+    """Build a canonical modifier string from boolean modifier flags."""
     parts: list[str] = []
-    if any(t in ("ctrl", "control") for t in tokens):
+    if ctrl:
         parts.append("Ctrl")
-    if "alt" in tokens:
+    if alt:
         parts.append("Alt")
-    if "shift" in tokens:
+    if shift:
         parts.append("Shift")
-    if any(t in ("win", "cmd", "super", "meta") for t in tokens):
+    if win:
         parts.append("Win")
-    return "+".join(parts) if parts else "Alt+Win"
+    return "+".join(parts) if parts else "Alt+Shift"
+
+
+def normalize_modifier_display(modifier_str: str) -> str:
+    """Normalize a modifier string into canonical Title+Case form (e.g. 'Alt+Shift')."""
+    ctrl, alt, shift, win = modifier_to_flags(modifier_str)
+    return flags_to_modifier(ctrl=ctrl, alt=alt, shift=shift, win=win)
 
 
 def parse_hotkey_spec(hotkey_str: str) -> tuple[int, int] | None:
-    """Parse a hotkey string like 'Alt+Win+1' or '<alt>+<cmd>+m' into (mod_mask, vk_code)."""
+    """Parse a hotkey string like 'Alt+Shift+1' or '<alt>+<shift>+m' into (mod_mask, vk_code)."""
     if not hotkey_str or not hotkey_str.strip():
         return None
     tokens = [
@@ -84,6 +123,9 @@ def parse_hotkey_spec(hotkey_str: str) -> tuple[int, int] | None:
     if not key_token or mod_mask == 0:
         return None
 
+    if key_token in _SHIFTED_NUMBER_ROW_MAP:
+        key_token = _SHIFTED_NUMBER_ROW_MAP[key_token]
+
     if len(key_token) == 1 and key_token.isdigit():
         return mod_mask, ord(key_token)
     if len(key_token) == 1 and key_token.isalpha():
@@ -92,7 +134,7 @@ def parse_hotkey_spec(hotkey_str: str) -> tuple[int, int] | None:
 
 
 def to_pynput_combo(hotkey_str: str) -> str | None:
-    """Convert a hotkey string like 'Alt+Win+1' into pynput format '<alt>+<cmd>+1'."""
+    """Convert a hotkey string like 'Alt+Shift+1' into pynput format '<alt>+<shift>+1'."""
     parsed = parse_hotkey_spec(hotkey_str)
     if parsed is None:
         return None
@@ -113,12 +155,21 @@ def to_pynput_combo(hotkey_str: str) -> str | None:
 if _PYNPUT_AVAILABLE:
 
     class NormalizedGlobalHotKeys(keyboard.GlobalHotKeys):  # type: ignore[misc]
-        """GlobalHotKeys subclass that normalizes Windows virtual key codes when modifiers are held."""
+        """GlobalHotKeys subclass that normalizes number-row and letter virtual keys when Shift/Alt are held."""
 
         def canonical(self, key: Any) -> Any:
+            raw_vk = getattr(key, "vk", None)
+            if raw_vk is not None:
+                if 48 <= raw_vk <= 57:
+                    return KeyCode.from_char(chr(raw_vk))
+                if 65 <= raw_vk <= 90:
+                    return KeyCode.from_char(chr(raw_vk).lower())
+
             k = super().canonical(key)
             vk = getattr(k, "vk", None)
             char = getattr(k, "char", None)
+            if isinstance(char, str) and char in _SHIFTED_NUMBER_ROW_MAP:
+                return KeyCode.from_char(_SHIFTED_NUMBER_ROW_MAP[char])
             if vk is not None and char is None:
                 if 65 <= vk <= 90:
                     return KeyCode.from_char(chr(vk).lower())
@@ -190,9 +241,9 @@ class GlobalHotkeyService:
 
     def build_hotkey_map(
         self,
-        modifier: str = "Alt+Win",
-        summary_hotkey: str = "Alt+Win+0",
-        manage_hotkey: str = "Alt+Win+M",
+        modifier: str = "Alt+Shift",
+        summary_hotkey: str = "Alt+Shift+0",
+        manage_hotkey: str = "Alt+Shift+M",
     ) -> dict[str, Callable[[], None]]:
         """Build the mapping of human hotkey specs to callbacks."""
         norm_mod = normalize_modifier_display(modifier)
@@ -204,7 +255,9 @@ class GlobalHotkeyService:
             self._active_bindings[f"slot_{slot_num}"] = spec
             bindings[spec] = lambda s=slot_num: self.handle_slot_trigger(s)  # type: ignore[misc]
 
-        sum_spec = summary_hotkey.strip() or f"{norm_mod}+0"
+        sum_spec = summary_hotkey.strip()
+        if not sum_spec or sum_spec.endswith("+0"):
+            sum_spec = f"{norm_mod}+0"
         self._active_bindings["summary"] = sum_spec
         bindings[sum_spec] = self.handle_summary_trigger
 
@@ -216,9 +269,9 @@ class GlobalHotkeyService:
 
     def start(
         self,
-        modifier: str = "Alt+Win",
-        summary_hotkey: str = "Alt+Win+0",
-        manage_hotkey: str = "Alt+Win+M",
+        modifier: str = "Alt+Shift",
+        summary_hotkey: str = "Alt+Shift+0",
+        manage_hotkey: str = "Alt+Shift+M",
         *,
         wx_module: Any = None,
     ) -> bool:
@@ -226,6 +279,7 @@ class GlobalHotkeyService:
         self.stop()
         spec_map = self.build_hotkey_map(modifier, summary_hotkey, manage_hotkey)
         registered_any = False
+        unregistered_specs: dict[str, Callable[[], None]] = dict(spec_map)
 
         # 1. Try native OS registration via hidden wx.Frame if wx is active
         if wx_module is not None and wx_module.App.Get() is not None:
@@ -246,14 +300,15 @@ class GlobalHotkeyService:
                             lambda _evt, cb=callback: cb(),
                             id=hk_id,
                         )
+                        unregistered_specs.pop(spec, None)
                         registered_any = True
             except Exception as exc:
                 logger.debug("Native wx RegisterHotKey setup failed: %s", exc)
 
-        # 2. If native registration did not cover all hotkeys, start NormalizedGlobalHotKeys
-        if not registered_any and _PYNPUT_AVAILABLE and NormalizedGlobalHotKeys is not None:
+        # 2. Register any remaining hotkeys with NormalizedGlobalHotKeys fallback
+        if unregistered_specs and _PYNPUT_AVAILABLE and NormalizedGlobalHotKeys is not None:
             pynput_map: dict[str, Callable[[], None]] = {}
-            for spec, callback in spec_map.items():
+            for spec, callback in unregistered_specs.items():
                 combo = to_pynput_combo(spec)
                 if combo:
                     pynput_map[combo] = callback
