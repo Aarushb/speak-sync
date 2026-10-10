@@ -12,6 +12,7 @@ from speak_dropbox.core.classifier import (
     format_spoken_status,
     normalize_tooltip_text,
 )
+from speak_dropbox.core.history import SyncActivityLog
 from speak_dropbox.core.local_adapters import enrich_bare_cloud_tooltip
 from speak_dropbox.models import (
     ChangeType,
@@ -140,6 +141,7 @@ class TrayMonitorService:
     def __init__(self, backend: TrayBackend, config: AppConfig) -> None:
         self.backend = backend
         self.config = config
+        self.activity_log = SyncActivityLog()
         self._active_slots: list[MonitoredSourceStatus] = []
         self._previous_by_id: dict[str, MonitoredSourceStatus] = {}
         self._unmonitored_icons: list[TrayIconItem] = []
@@ -335,6 +337,10 @@ class TrayMonitorService:
                         location=prev.location,
                     )
                 )
+
+        for event in events:
+            if event.should_announce_speech:
+                self.activity_log.record(event)
 
         self._previous_by_id = current_by_id
         self._has_polled_once = True
