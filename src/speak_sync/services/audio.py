@@ -8,7 +8,7 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
-from speak_dropbox.config import AppConfig
+from speak_sync.config import AppConfig
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def get_assets_dir() -> Path:
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         return Path(getattr(sys, "_MEIPASS")) / "assets"
 
-    # Package source tree: src/speak_dropbox/services/audio.py -> repo_root/assets
+    # Package source tree: src/speak_sync/services/audio.py -> repo_root/assets
     repo_root = Path(__file__).resolve().parents[3]
     assets_dir = repo_root / "assets"
     if assets_dir.exists():

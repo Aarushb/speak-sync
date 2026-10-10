@@ -284,7 +284,7 @@ class GlobalHotkeyService:
         # 1. Try native OS registration via hidden wx.Frame if wx is active
         if wx_module is not None and wx_module.App.Get() is not None:
             try:
-                frame = wx_module.Frame(None, -1, "SpeakDropboxHotkeyHost")
+                frame = wx_module.Frame(None, -1, "SpeakSyncHotkeyHost")
                 self._wx_host_frame = frame
                 base_id = 7000
                 for idx, (spec, callback) in enumerate(spec_map.items()):
