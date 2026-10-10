@@ -6,7 +6,7 @@ from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from speak_dropbox.models import ChangeType, StateTransitionEvent, SyncState
+from speak_dropbox.models import ChangeType, StateChangeEvent, SyncState
 
 
 @dataclass(frozen=True)
@@ -17,18 +17,16 @@ class SyncActivityEntry:
     display_time: str
     source_id: str
     display_name: str
-    slot: int | None
     change_type: ChangeType
     state: SyncState
     spoken_text: str
 
     def format_line(self) -> str:
-        slot_prefix = f"Slot {self.slot}" if self.slot is not None else "Unassigned"
-        return f"[{self.display_time}] {slot_prefix} ({self.state.value}): {self.spoken_text}"
+        return f"[{self.display_time}] {self.display_name} ({self.state.display_label}): {self.spoken_text}"
 
 
 class SyncActivityLog:
-    """Bounded ring buffer storing recent StateTransitionEvents in chronological order."""
+    """Bounded ring buffer storing recent StateChangeEvents in chronological order."""
 
     def __init__(self, max_entries: int = 100) -> None:
         self._max_entries = max(1, max_entries)
@@ -36,21 +34,20 @@ class SyncActivityLog:
 
     def record(
         self,
-        event: StateTransitionEvent,
+        event: StateChangeEvent,
         *,
         now: datetime | None = None,
     ) -> SyncActivityEntry:
-        """Record a StateTransitionEvent into the ring buffer."""
+        """Record a StateChangeEvent into the ring buffer."""
         dt = now or datetime.now().astimezone()
         entry = SyncActivityEntry(
             timestamp_iso=dt.astimezone(timezone.utc).isoformat(),
             display_time=dt.strftime("%H:%M:%S"),
             source_id=event.source_id,
             display_name=event.display_name,
-            slot=event.slot,
             change_type=event.change_type,
             state=event.new_state,
-            spoken_text=event.spoken_text,
+            spoken_text=event.spoken_announcement,
         )
         self._entries.append(entry)
         return entry
