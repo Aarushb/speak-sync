@@ -1,15 +1,15 @@
-# Speak Dropbox
+# SpeakSync
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB.svg)](https://www.python.org/)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg)](https://www.python.org/)
 [![Platforms: Windows | macOS | Linux](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-2ea44f.svg)](#cross-platform-support)
-[![Accessibility: Prism & Screen Readers](https://img.shields.io/badge/Accessibility-NVDA%20%7C%20JAWS%20%7C%20Narrator%20%7C%20VoiceOver%20%7C%20Orca-orange.svg)](#screen-reader-and-audio-feedback)
+[![Accessibility: Prism & Screen Readers](https://img.shields.io/badge/Accessibility-NVDA%20%7C%20JAWS%20%7C%20Narrator%20%7C%20VoiceOver%20%7C%20Orca-orange.svg)](#features)
 
-**Speak Dropbox** is an accessible system tray and hidden overflow cloud synchronization monitor for blind and keyboard-first users. Inspired by Valiant8086's classic Windows 7 utility, it watches your cloud storage clients in the background and reports when files start syncing, while transfers are in progress, and the moment everything is up to date.
+**SpeakSync** is an accessible system tray and hidden overflow cloud synchronization monitor for blind and keyboard-first users. Inspired by Valiant8086's classic *Speak Dropbox* utility, it watches your cloud storage clients in the background and reports when files start syncing, while transfers are in progress, and the moment everything is up to date.
 
-Modern Windows 10 and Windows 11 builds redesigned the notification area around XAML Islands and hidden overflow flyouts, breaking older tray scripts or forcing users to drag every cloud icon onto the main taskbar. Speak Dropbox queries both the visible taskbar tray and the closed "Show hidden icons" overflow window directly in the background without moving your mouse, simulating clicks, or stealing keyboard focus.
+Modern Windows 10 and Windows 11 builds redesigned the notification area around XAML Islands and hidden overflow flyouts, breaking older tray scripts or forcing users to drag every cloud icon onto the main taskbar. SpeakSync queries both the visible taskbar tray and the closed "Show hidden icons" overflow window directly in the background without moving your mouse, simulating clicks, or stealing keyboard focus.
 
-Beyond Dropbox, Speak Dropbox monitors **Google Drive**, **Microsoft OneDrive**, **Resilio Sync**, **iCloud Drive**, **Nextcloud**, **Syncthing**, **MEGAsync**, and any custom application in your system tray.
+Beyond Dropbox, SpeakSync monitors **Google Drive**, **Microsoft OneDrive**, **Resilio Sync**, **iCloud Drive**, **Nextcloud**, **Syncthing**, **MEGAsync**, and any custom application in your system tray.
 
 ---
 
@@ -20,15 +20,15 @@ Beyond Dropbox, Speak Dropbox monitors **Google Drive**, **Microsoft OneDrive**,
 - **Direct Screen Reader Speech & Braille (Prism)**: Announces status transitions and on-demand slot queries directly through your active screen reader (NVDA, JAWS, Windows Narrator, ZDSR, VoiceOver, or Orca) with automatic SAPI / AVSpeech / Speech Dispatcher fallback via [Prism (`prismatoid`)](https://pypi.org/project/prismatoid/).
 - **Three-Stage Sync Earcons**: Plays distinct spatial audio cues (`start.flac` when syncing or indexing begins, a gentle periodic `loopty.flac` pulse while transfers remain active, and `finish.flac` when all active sources return to idle).
 - **Global Slot Hotkeys (`Alt+Shift+1` .. `9`)**: Query individual monitored sources from any application using the number row. Double-pressing a slot hotkey within 500 ms copies that source's exact status text to the clipboard.
-- **Accessible System Tray Menu & Settings Dialog**: Right-click the Speak Dropbox tray icon (or press `Alt+Shift+M`) to inspect active sources, open a provider's local sync folder in your file manager, reorder slots, preview audio cues, or review the timestamped Sync Activity Log.
+- **Accessible System Tray Menu & Settings Dialog**: Right-click the SpeakSync tray icon (or press `Alt+Shift+M`) to inspect active sources, open a provider's local sync folder in your file manager, reorder slots, preview audio cues, or review the timestamped Sync Activity Log.
 
 ---
 
 ## Screenshots
 
-![Speak Dropbox Manage Sources and Settings dialog open to the Monitored Sources tab, showing Slot 1 Dropbox in the Visible Tray, Slot 2 Google Drive in the Hidden Tray, Slot 3 OneDrive syncing 3 files in the Hidden Tray, and Slot 4 Resilio Sync in the Hidden Tray, along with buttons to add, edit, toggle, reorder, or remove sources.](docs/images/manage_sources_tab.png)
+![SpeakSync Manage Sources and Settings dialog open to the Monitored Sources tab, showing Slot 1 Dropbox in the Visible Tray, Slot 2 Google Drive in the Hidden Tray, Slot 3 OneDrive syncing 3 files in the Hidden Tray, and Slot 4 Resilio Sync in the Hidden Tray, along with buttons to add, edit, toggle, reorder, or remove sources.](docs/images/manage_sources_tab.png)
 
-![Speak Dropbox Manage Sources and Settings dialog open to the Speech and Audio Cues tab, showing checkboxes for Prism screen reader speech announcements and Three-Stage Sync Earcon controls with a 2.6 second sustain loop interval and preview buttons for Start, Loop, and Finish cues.](docs/images/speech_audio_tab.png)
+![SpeakSync Manage Sources and Settings dialog open to the Speech and Audio Cues tab, showing checkboxes for Prism screen reader speech announcements and Three-Stage Sync Earcon controls with a 2.6 second sustain loop interval and preview buttons for Start, Loop, and Finish cues.](docs/images/speech_audio_tab.png)
 
 ![Add Source from Detected System Tray Icons dialog listing live applications from both the Hidden Tray and Visible Tray, including pCloud Drive, Proton Drive, Dropbox, Google Drive, and Tailscale, with auto-populated display name and keyword fields.](docs/images/detect_tray_icons.png)
 
@@ -38,7 +38,7 @@ Beyond Dropbox, Speak Dropbox monitors **Google Drive**, **Microsoft OneDrive**,
 
 ### Prerequisites
 
-- Python 3.10 or newer
+- Python 3.11 or newer
 - [`uv`](https://docs.astral.sh/uv/) (recommended for fast, isolated virtual environments)
 
 ### Installation
@@ -46,8 +46,8 @@ Beyond Dropbox, Speak Dropbox monitors **Google Drive**, **Microsoft OneDrive**,
 Clone the repository and create a local virtual environment inside the project directory:
 
 ```powershell
-git clone https://github.com/Aarushb/speak_dropbox.git
-cd speak_dropbox
+git clone https://github.com/Aarushb/speak-sync.git
+cd speak-sync
 uv venv .venv
 uv pip install --python .venv\Scripts\python.exe -e .
 ```
@@ -59,18 +59,18 @@ uv venv .venv
 uv pip install --python .venv/bin/python -e .
 ```
 
-### Running Speak Dropbox
+### Running SpeakSync
 
 Launch the background tray monitor:
 
 ```powershell
-.venv\Scripts\python.exe -m speak_dropbox
+.venv\Scripts\python.exe -m speak_sync
 ```
 
 To open the **Manage Sources & Settings** window immediately on launch:
 
 ```powershell
-.venv\Scripts\python.exe -m speak_dropbox --manage
+.venv\Scripts\python.exe -m speak_sync --manage
 ```
 
 ### Command-Line Inspection Flags
@@ -79,24 +79,24 @@ You can also query your cloud sync status from a terminal or script without keep
 
 - **Speak and print a summary of all active cloud sources**:
   ```powershell
-  .venv\Scripts\python.exe -m speak_dropbox --status
+  .venv\Scripts\python.exe -m speak_sync --status
   ```
 - **Query a specific slot (1 through 9)**:
   ```powershell
-  .venv\Scripts\python.exe -m speak_dropbox --slot 1
+  .venv\Scripts\python.exe -m speak_sync --slot 1
   ```
 - **List every icon currently discovered in both the visible tray and hidden overflow**:
   ```powershell
-  .venv\Scripts\python.exe -m speak_dropbox --list-tray
+  .venv\Scripts\python.exe -m speak_sync --list-tray
   ```
 - **Print output without speaking aloud**:
-  Add `--no-speak` to any one-shot flag (for example, `python -m speak_dropbox --status --no-speak`).
+  Add `--no-speak` to any one-shot flag (for example, `python -m speak_sync --status --no-speak`).
 
 ---
 
 ## Keyboard Shortcuts
 
-All global hotkeys work from any application while Speak Dropbox is running in the background. You can remap any combination of modifier keys (`Alt`, `Shift`, `Ctrl`, `Win`) using the preset dropdown or the individual modifier checkboxes in the **Hotkeys & General** tab while the number row (`1` through `9` and `0`) remains fixed.
+All global hotkeys work from any application while SpeakSync is running in the background. You can remap any combination of modifier keys (`Alt`, `Shift`, `Ctrl`, `Win`) using the preset dropdown or the individual modifier checkboxes in the **Hotkeys & General** tab while the number row (`1` through `9` and `0`) remains fixed.
 
 | Shortcut | Context | Action |
 | :--- | :--- | :--- |
@@ -120,7 +120,7 @@ flowchart LR
         NixMac["Linux SNI D-Bus &\nmacOS AXExtrasMenuBar"]
     end
 
-    subgraph Core["Speak Dropbox Core Engine"]
+    subgraph Core["SpeakSync Core Engine"]
         Dedup["Tooltip Normalizer &\nWin11 Prefix Deduplicator"]
         Matcher["Source Rule Matcher &\nSlot Assigner (Slots 1-9)"]
         Classifier["Semantic SyncState Classifier\n(IDLE, SYNCING, INDEXING, ERROR)"]
@@ -169,9 +169,9 @@ flowchart LR
 
 Settings are saved automatically in JSON format at:
 
-- **Windows**: `%APPDATA%\speak_dropbox\config.json`
-- **macOS**: `~/Library/Application Support/speak_dropbox/config.json`
-- **Linux**: `~/.config/speak_dropbox/config.json`
+- **Windows**: `%APPDATA%\speak_sync\config.json`
+- **macOS**: `~/Library/Application Support/speak_sync/config.json`
+- **Linux**: `~/.config/speak_sync/config.json`
 
 You can edit every setting through the **Manage Sources & Settings** dialog (`Alt+Shift+M`) or pass a custom path via `--config path/to/config.json`.
 
@@ -179,7 +179,7 @@ You can edit every setting through the **Manage Sources & Settings** dialog (`Al
 
 ## Contributing & Feedback
 
-If you find Speak Dropbox useful, please consider starring the repository on GitHub so other screen reader and keyboard users can discover it. Bug reports, cloud client tooltip samples, and feature requests are always welcome in [GitHub Issues](https://github.com/Aarushb/speak_dropbox/issues), and pull requests are gladly accepted.
+If you find SpeakSync useful, please consider starring the repository on GitHub so other screen reader and keyboard users can discover it. Bug reports, cloud client tooltip samples, and feature requests are always welcome in [GitHub Issues](https://github.com/Aarushb/speak-sync/issues), and pull requests are gladly accepted.
 
 ---
 
