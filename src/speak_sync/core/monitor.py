@@ -5,16 +5,16 @@ from __future__ import annotations
 import time
 from collections.abc import Sequence
 
-from speak_dropbox.backends.base import TrayBackend
-from speak_dropbox.config import AppConfig
-from speak_dropbox.core.classifier import (
+from speak_sync.backends.base import TrayBackend
+from speak_sync.config import AppConfig
+from speak_sync.core.classifier import (
     classify_sync_state,
     format_spoken_status,
     normalize_tooltip_text,
 )
-from speak_dropbox.core.history import SyncActivityLog
-from speak_dropbox.core.local_adapters import enrich_bare_cloud_tooltip
-from speak_dropbox.models import (
+from speak_sync.core.history import SyncActivityLog
+from speak_sync.core.local_adapters import enrich_bare_cloud_tooltip
+from speak_sync.models import (
     ChangeType,
     MonitoredSourceStatus,
     SourceRule,
@@ -23,11 +23,11 @@ from speak_dropbox.models import (
     TrayIconItem,
 )
 
-SELF_TRAY_PREFIX = "speak dropbox"
+SELF_TRAY_PREFIX = "speaksync"
 
 
 def is_ignored_or_self_icon(item: TrayIconItem, ignored_keywords: Sequence[str] = ()) -> bool:
-    """Return True if a tray icon belongs to Speak Dropbox itself or matches an ignored keyword."""
+    """Return True if a tray icon belongs to SpeakSync itself or matches an ignored keyword."""
     lower = item.cleaned_tooltip.lower()
     if lower.startswith(SELF_TRAY_PREFIX):
         return True
@@ -161,7 +161,7 @@ class TrayMonitorService:
         return list(self._unmonitored_icons)
 
     def get_all_discovered_icons(self) -> list[TrayIconItem]:
-        """Return all discovered tray icons excluding Speak Dropbox itself."""
+        """Return all discovered tray icons excluding SpeakSync itself."""
         return [
             item
             for item in self._all_icons
@@ -215,23 +215,23 @@ class TrayMonitorService:
         return f"{header} {' '.join(items)}"
 
     def format_tray_tooltip_summary(self) -> str:
-        """Format a concise tooltip (<120 chars) for Speak Dropbox's own system tray icon."""
+        """Format a concise tooltip (<120 chars) for SpeakSync's own system tray icon."""
         if not self._active_slots:
-            return "Speak Dropbox - No active sources detected"
+            return "SpeakSync - No active sources detected"
 
         active_syncs = [s for s in self._active_slots if s.state.is_active_transfer]
         if active_syncs:
             names = ", ".join(s.display_name for s in active_syncs)
-            return f"Speak Dropbox - Syncing: {names}"[:120]
+            return f"SpeakSync - Syncing: {names}"[:120]
 
         problems = [s for s in self._active_slots if s.state.is_problem]
         if problems:
             names = ", ".join(s.display_name for s in problems)
-            return f"Speak Dropbox - Attention: {names}"[:120]
+            return f"SpeakSync - Attention: {names}"[:120]
 
         count = len(self._active_slots)
         noun = "source" if count == 1 else "sources"
-        return f"Speak Dropbox - {count} {noun} up to date"
+        return f"SpeakSync - {count} {noun} up to date"
 
     def should_speak_event(self, event: StateChangeEvent, *, is_initial_poll: bool = False) -> bool:
         """Evaluate whether a StateChangeEvent should be spoken aloud based on AppConfig."""

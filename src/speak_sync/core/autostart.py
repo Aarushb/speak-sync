@@ -10,11 +10,11 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 RUN_KEY_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
-RUN_VALUE_NAME = "SpeakDropbox"
+RUN_VALUE_NAME = "SpeakSync"
 
 
 def get_launch_command() -> str:
-    """Build the command line used to launch Speak Dropbox at OS login."""
+    """Build the command line used to launch SpeakSync at OS login."""
     if getattr(sys, "frozen", False):
         return f'"{sys.executable}"'
 
@@ -23,11 +23,11 @@ def get_launch_command() -> str:
         pythonw = exe.with_name("pythonw.exe")
         if pythonw.exists():
             exe = pythonw
-    return f'"{exe}" -m speak_dropbox'
+    return f'"{exe}" -m speak_sync'
 
 
 def is_autostart_enabled() -> bool:
-    """Return True if Speak Dropbox is currently registered to launch at user login."""
+    """Return True if SpeakSync is currently registered to launch at user login."""
     if sys.platform == "win32":
         try:
             import winreg
@@ -47,16 +47,16 @@ def is_autostart_enabled() -> bool:
             return False
 
     if sys.platform == "darwin":
-        plist = Path.home() / "Library" / "LaunchAgents" / "com.aarushb.speak_dropbox.plist"
+        plist = Path.home() / "Library" / "LaunchAgents" / "com.aarushb.speak_sync.plist"
         return plist.exists()
 
     xdg_config = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-    desktop_file = xdg_config / "autostart" / "speak-dropbox.desktop"
+    desktop_file = xdg_config / "autostart" / "speak-sync.desktop"
     return desktop_file.exists()
 
 
 def set_autostart_enabled(enabled: bool) -> bool:
-    """Enable or disable launching Speak Dropbox on OS login."""
+    """Enable or disable launching SpeakSync on OS login."""
     if sys.platform == "win32":
         try:
             import winreg
@@ -86,7 +86,7 @@ def set_autostart_enabled(enabled: bool) -> bool:
             return False
 
     if sys.platform == "darwin":
-        plist = Path.home() / "Library" / "LaunchAgents" / "com.aarushb.speak_dropbox.plist"
+        plist = Path.home() / "Library" / "LaunchAgents" / "com.aarushb.speak_sync.plist"
         try:
             if enabled:
                 plist.parent.mkdir(parents=True, exist_ok=True)
@@ -96,12 +96,12 @@ def set_autostart_enabled(enabled: bool) -> bool:
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.aarushb.speak_dropbox</string>
+    <string>com.aarushb.speak_sync</string>
     <key>ProgramArguments</key>
     <array>
         <string>{sys.executable}</string>
         <string>-m</string>
-        <string>speak_dropbox</string>
+        <string>speak_sync</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -118,14 +118,14 @@ def set_autostart_enabled(enabled: bool) -> bool:
             return False
 
     xdg_config = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-    desktop_file = xdg_config / "autostart" / "speak-dropbox.desktop"
+    desktop_file = xdg_config / "autostart" / "speak-sync.desktop"
     try:
         if enabled:
             desktop_file.parent.mkdir(parents=True, exist_ok=True)
             desktop_file.write_text(
                 f"""[Desktop Entry]
 Type=Application
-Name=Speak Dropbox
+Name=SpeakSync
 Comment=Accessible cloud sync tray monitor
 Exec={get_launch_command()}
 Terminal=false

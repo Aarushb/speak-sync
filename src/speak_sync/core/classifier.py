@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from speak_dropbox.models import SyncState
+from speak_sync.models import SyncState
 
 _REPEATED_PREFIX_RE = re.compile(r"^([^\r\n]{2,40}?)\s+\1(?=\b|\s|$|-|:)", re.IGNORECASE)
 _APP_HEADER_RE = re.compile(

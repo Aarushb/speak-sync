@@ -6,7 +6,7 @@ from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from speak_dropbox.models import ChangeType, StateChangeEvent, SyncState
+from speak_sync.models import ChangeType, StateChangeEvent, SyncState
 
 
 @dataclass(frozen=True)
