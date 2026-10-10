@@ -12,6 +12,7 @@ from speak_dropbox.core.classifier import (
     format_spoken_status,
     normalize_tooltip_text,
 )
+from speak_dropbox.core.local_adapters import enrich_bare_cloud_tooltip
 from speak_dropbox.models import (
     ChangeType,
     MonitoredSourceStatus,
@@ -59,9 +60,10 @@ def match_icons_to_rules(
                     icon.raw_tooltip,
                     strip_unread_notifications=strip_unread_notifications,
                 )
+                enriched = enrich_bare_cloud_tooltip(cleaned or icon.cleaned_tooltip)
                 normalized_icon = TrayIconItem(
                     raw_tooltip=icon.raw_tooltip,
-                    cleaned_tooltip=cleaned or icon.cleaned_tooltip,
+                    cleaned_tooltip=enriched,
                     location=icon.location,
                     process_name=icon.process_name,
                     automation_id=icon.automation_id,
