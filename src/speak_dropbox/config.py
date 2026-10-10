@@ -123,9 +123,9 @@ class AppConfig:
     finish_sound_path: str = ""
 
     # Global hotkey preferences
-    hotkey_modifier: str = "Alt+Win"
-    summary_hotkey: str = "Alt+Win+0"
-    manage_hotkey: str = "Alt+Win+M"
+    hotkey_modifier: str = "Alt+Shift"
+    summary_hotkey: str = "Alt+Shift+0"
+    manage_hotkey: str = "Alt+Shift+M"
 
     # OS startup
     run_on_startup: bool = False
@@ -227,9 +227,9 @@ class AppConfig:
             start_sound_path=str(data.get("start_sound_path", "")),
             loop_sound_path=str(data.get("loop_sound_path", "")),
             finish_sound_path=str(data.get("finish_sound_path", "")),
-            hotkey_modifier=str(data.get("hotkey_modifier", "Alt+Win")),
-            summary_hotkey=str(data.get("summary_hotkey", "Alt+Win+0")),
-            manage_hotkey=str(data.get("manage_hotkey", "Alt+Win+M")),
+            hotkey_modifier=str(data.get("hotkey_modifier", "Alt+Shift")),
+            summary_hotkey=str(data.get("summary_hotkey", "Alt+Shift+0")),
+            manage_hotkey=str(data.get("manage_hotkey", "Alt+Shift+M")),
             run_on_startup=bool(data.get("run_on_startup", False)),
             ignored_keywords=[str(k) for k in data.get("ignored_keywords", []) if str(k).strip()],
         )
