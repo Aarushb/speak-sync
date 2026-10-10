@@ -26,6 +26,18 @@ def test_deduplicate_win11_prefix() -> None:
         deduplicate_win11_prefix("Google Drive Google Drive - Everything is up to date")
         == "Google Drive - Everything is up to date"
     )
+    assert (
+        deduplicate_win11_prefix(
+            "Windows Security - No actions needed. Windows Security - Actions recommended."
+        )
+        == "Windows Security - Actions recommended."
+    )
+    assert (
+        deduplicate_win11_prefix(
+            "SpeakDropboxHiddenProbe\nIndexing 12 files... SpeakDropboxHiddenProbe\nUp to date"
+        )
+        == "SpeakDropboxHiddenProbe\nUp to date"
+    )
 
 
 def test_normalize_tooltip_text_multiline_and_unread() -> None:
