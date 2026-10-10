@@ -7,12 +7,12 @@ import wx
 import wx.adv
 
 from speak_dropbox.config import AppConfig
+from speak_dropbox.core.folders import open_sync_folder, resolve_sync_folder
 from speak_dropbox.core.monitor import TrayMonitorService
-from speak_dropbox.models import TrayIconItem
+from speak_dropbox.models import SourceRule, TrayIconItem
 from speak_dropbox.services.hotkey import normalize_modifier_display
 from speak_dropbox.ui.icon_gen import create_tray_icon
 from speak_dropbox.ui.tray_picker_dialog import infer_app_name_and_keyword, make_source_id
-from speak_dropbox.models import SourceRule
 
 
 class SpeakDropboxTrayIcon(wx.adv.TaskBarIcon):
@@ -97,6 +97,17 @@ class SpeakDropboxTrayIcon(wx.adv.TaskBarIcon):
                     wx.ID_ANY,
                     "&Copy Status Text to Clipboard",
                 )
+                folder = resolve_sync_folder(status.source_id, status.display_name)
+                if folder is not None:
+                    open_folder_item = submenu.Append(
+                        wx.ID_ANY,
+                        f"&Open Local Sync Folder ({folder.name})",
+                    )
+                    menu.Bind(
+                        wx.EVT_MENU,
+                        lambda _e, p=folder: open_sync_folder(p),
+                        open_folder_item,
+                    )
                 submenu.AppendSeparator()
                 up_item = submenu.Append(wx.ID_ANY, "Move Slot &Up")
                 down_item = submenu.Append(wx.ID_ANY, "Move Slot &Down")
