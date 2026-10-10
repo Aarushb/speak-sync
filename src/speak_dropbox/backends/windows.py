@@ -92,18 +92,16 @@ def _get_user32() -> ctypes.WinDLL | None:
 
 
 def ensure_default_desktop() -> bool:
-    """Attach the current thread to the interactive Default desktop if running in an isolated desktop."""
+    """Attach the current thread to the interactive Default desktop before any Win32 GUI call."""
     user32 = _get_user32()
     if user32 is None:
         return False
-    if user32.FindWindowW(SHELL_TRAY_CLASS, None):
-        return True
     try:
         user32.OpenDesktopW.argtypes = [
             wintypes.LPCWSTR,
             wintypes.DWORD,
             wintypes.BOOL,
-            wintypes.ACCESS_MASK,
+            wintypes.DWORD,
         ]
         user32.OpenDesktopW.restype = wintypes.HANDLE
         user32.SetThreadDesktop.argtypes = [wintypes.HANDLE]
@@ -220,7 +218,13 @@ class WindowsTrayBackend(TrayBackend):
     """Queries visible and hidden overflow Windows system tray icons in the background via UIA ElementFromHandle."""
 
     def __init__(self) -> None:
+        from concurrent.futures import ThreadPoolExecutor
+
         self._tls = _ThreadLocalUIAState()
+        self._executor = ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="SpeakDropboxWinUIA",
+        )
 
     @property
     def platform_name(self) -> str:
@@ -243,7 +247,6 @@ class WindowsTrayBackend(TrayBackend):
             import comtypes.client
 
             comtypes.CoInitialize()
-            # Generate or load UIAutomationClient type library wrapper
             comtypes.client.GetModule("UIAutomationCore.dll")
             from comtypes.gen import UIAutomationClient
 
@@ -307,14 +310,12 @@ class WindowsTrayBackend(TrayBackend):
         results: list[TrayIconItem] = []
         try:
             if target.container_kind == "xaml_input_site":
-                # Fast path: query direct children with AutomationId == 'NotifyItemIcon'
                 array = el.FindAllBuildCache(
                     _TREESCOPE_CHILDREN,
                     self._tls.cond_notify_item,
                     self._tls.cache_req,
                 )
                 if array is None or array.Length == 0:
-                    # Fallback for pre-Moment Win11 builds: query Button children
                     array = el.FindAllBuildCache(
                         _TREESCOPE_CHILDREN,
                         self._tls.cond_button,
@@ -360,8 +361,7 @@ class WindowsTrayBackend(TrayBackend):
 
         return results
 
-    def get_tray_icons(self, *, strip_unread_notifications: bool = False) -> list[TrayIconItem]:
-        """Return all visible and hidden overflow system tray icons on Windows."""
+    def _query_on_worker(self, strip_unread_notifications: bool) -> list[TrayIconItem]:
         if not self._ensure_uia():
             return []
 
@@ -382,6 +382,17 @@ class WindowsTrayBackend(TrayBackend):
 
         return icons
 
+    def get_tray_icons(self, *, strip_unread_notifications: bool = False) -> list[TrayIconItem]:
+        """Return all visible and hidden overflow system tray icons on Windows."""
+        try:
+            future = self._executor.submit(self._query_on_worker, strip_unread_notifications)
+            return future.result(timeout=5.0)
+        except Exception as exc:
+            logger.error("WindowsTrayBackend worker failed: %s", exc)
+            return []
+
     def close(self) -> None:
-        if hasattr(self._tls, "element_cache"):
-            self._tls.element_cache.clear()
+        try:
+            self._executor.shutdown(wait=False, cancel_futures=True)
+        except Exception:
+            pass
