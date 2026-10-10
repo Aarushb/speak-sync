@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from speak_dropbox.core.history import SyncActivityLog
-from speak_dropbox.models import ChangeType, StateTransitionEvent, SyncState, TrayLocation
+from speak_dropbox.models import ChangeType, StateChangeEvent, SyncState, TrayLocation
 
 
 def test_sync_activity_log_records_and_orders_newest_first() -> None:
@@ -13,18 +13,16 @@ def test_sync_activity_log_records_and_orders_newest_first() -> None:
     base_dt = datetime(2026, 10, 10, 12, 0, 0, tzinfo=timezone.utc)
 
     for idx in range(4):
-        evt = StateTransitionEvent(
+        evt = StateChangeEvent(
             source_id="dropbox",
             display_name="Dropbox",
-            slot=1,
-            old_state=SyncState.IDLE,
-            new_state=SyncState.SYNCING,
-            old_text="Dropbox: Up to date",
-            new_text=f"Dropbox: Syncing {idx + 1} files",
-            spoken_text=f"Dropbox: Syncing {idx + 1} files",
             change_type=ChangeType.STATE_CHANGED,
+            previous_state=SyncState.IDLE,
+            new_state=SyncState.SYNCING,
+            previous_tooltip="Dropbox: Up to date",
+            new_tooltip=f"Dropbox: Syncing {idx + 1} files",
+            spoken_announcement=f"Dropbox: Syncing {idx + 1} files",
             location=TrayLocation.VISIBLE,
-            timestamp=float(idx),
         )
         log.record(evt, now=base_dt.replace(second=idx))
 
@@ -32,7 +30,7 @@ def test_sync_activity_log_records_and_orders_newest_first() -> None:
     newest = log.get_entries(newest_first=True)
     assert newest[0].spoken_text == "Dropbox: Syncing 4 files"
     assert newest[-1].spoken_text == "Dropbox: Syncing 2 files"
-    assert "[12:00:03] Slot 1 (SYNCING): Dropbox: Syncing 4 files" == newest[0].format_line()
+    assert "[12:00:03] Dropbox (Syncing): Dropbox: Syncing 4 files" == newest[0].format_line()
 
     log.clear()
     assert len(log) == 0
