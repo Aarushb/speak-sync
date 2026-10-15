@@ -23,8 +23,14 @@ except ImportError:
 
 def get_assets_dir() -> Path:
     """Locate the bundled assets directory containing start.flac, loopty.flac, and finish.flac."""
-    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-        return Path(getattr(sys, "_MEIPASS")) / "assets"
+    if getattr(sys, "frozen", False):
+        if hasattr(sys, "_MEIPASS"):
+            meipass_assets = Path(getattr(sys, "_MEIPASS")) / "assets"
+            if meipass_assets.is_dir():
+                return meipass_assets
+        exe_assets = Path(sys.executable).resolve().parent / "assets"
+        if exe_assets.is_dir():
+            return exe_assets
 
     # Package source tree: src/speak_sync/services/audio.py -> repo_root/assets
     repo_root = Path(__file__).resolve().parents[3]
