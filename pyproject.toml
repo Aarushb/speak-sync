@@ -7,7 +7,7 @@ name = "speak-sync"
 version = "0.1.0"
 description = "SpeakSync: Accessible multi-source system tray and hidden overflow cloud sync monitor with Prism screen reader speech, 3-stage audio cues, and global slot hotkeys."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = { text = "MIT" }
 authors = [
     { name = "Aarush Bhatnagar" }
