@@ -31,6 +31,9 @@ def get_assets_dir() -> Path:
         exe_assets = Path(sys.executable).resolve().parent / "assets"
         if exe_assets.is_dir():
             return exe_assets
+        internal_assets = Path(sys.executable).resolve().parent / "_internal" / "assets"
+        if internal_assets.is_dir():
+            return internal_assets
 
     # Package source tree: src/speak_sync/services/audio.py -> repo_root/assets
     repo_root = Path(__file__).resolve().parents[3]

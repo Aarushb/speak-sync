@@ -16,6 +16,27 @@ def test_resolve_bundled_cue_files() -> None:
         assert resolved.is_file()
 
 
+def test_resolve_frozen_cue_files(tmp_path: Path, monkeypatch) -> None:
+    fake_exe = tmp_path / "bin" / "speaksync.exe"
+    fake_exe.parent.mkdir(parents=True)
+    fake_exe.touch()
+
+    # Mock frozen app with _internal/assets
+    internal_assets = tmp_path / "bin" / "_internal" / "assets"
+    internal_assets.mkdir(parents=True)
+    (internal_assets / "start.flac").write_bytes(b"mock_start")
+
+    monkeypatch.setattr("sys.frozen", True, raising=False)
+    monkeypatch.setattr("sys.executable", str(fake_exe))
+
+    from speak_sync.services.audio import get_assets_dir
+
+    assets_dir = get_assets_dir()
+    assert assets_dir == internal_assets
+    resolved = resolve_cue_file("", "start.flac")
+    assert resolved == internal_assets / "start.flac"
+
+
 def test_audio_cue_three_stage_state_machine() -> None:
     played_files: list[str] = []
 
