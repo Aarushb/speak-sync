@@ -1,0 +1,176 @@
+name: Build & Package SpeakSync
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Windows (Setup Installer & Portable ZIP)
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv package manager
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Create virtual environment and install dependencies
+        run: |
+          uv venv
+          uv pip install --python .venv/Scripts/python.exe -e ".[test]"
+          uv pip install --python .venv/Scripts/python.exe pyinstaller
+
+      - name: Run test suite
+        run: |
+          .venv/Scripts/pytest.exe -q
+
+      - name: Install Inno Setup
+        run: |
+          choco install innosetup --no-progress
+
+      - name: Run Windows build pipeline
+        run: |
+          .venv/Scripts/python.exe scripts/build_windows.py
+
+      - name: Upload Windows Portable ZIP Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpeakSync-Windows-Portable
+          path: dist/*-windows-portable.zip
+          if-no-files-found: error
+
+      - name: Upload Windows Setup Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpeakSync-Windows-Installer
+          path: dist/*-windows-setup.exe
+          if-no-files-found: error
+
+  build-macos:
+    name: macOS (Standalone App Bundle)
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv package manager
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Create virtual environment and install dependencies
+        run: |
+          uv venv
+          uv pip install --python .venv/bin/python -e ".[test]"
+          uv pip install --python .venv/bin/python pyinstaller
+
+      - name: Run test suite
+        run: |
+          .venv/bin/pytest -q tests/test_models.py tests/test_classifier.py tests/test_folders.py tests/test_config.py tests/test_history.py tests/test_cross_platform_backends.py
+
+      - name: Build macOS standalone application
+        run: |
+          .venv/bin/pyinstaller \
+            --name "SpeakSync" \
+            --windowed \
+            --noconfirm \
+            --clean \
+            --add-data "assets:assets" \
+            --hidden-import "soundobj" \
+            --hidden-import "prism" \
+            --hidden-import "pynput" \
+            --hidden-import "pynput.keyboard._darwin" \
+            --hidden-import "pynput.mouse._darwin" \
+            src/speak_sync/__main__.py
+
+      - name: Create macOS release archive
+        run: |
+          cd dist
+          zip -r SpeakSync-v0.1.0-macos.zip SpeakSync.app
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpeakSync-macOS-Bundle
+          path: dist/SpeakSync-v0.1.0-macos.zip
+          if-no-files-found: error
+
+  build-linux:
+    name: Linux (Portable Tarball)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install system development dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-dev \
+            libdbus-1-dev \
+            libasound2-dev \
+            libpulse-dev
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv package manager
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Create virtual environment and install dependencies
+        run: |
+          uv venv
+          uv pip install --python .venv/bin/python -e ".[test]"
+          uv pip install --python .venv/bin/python pyinstaller
+
+      - name: Run cross-platform test suite
+        run: |
+          .venv/bin/pytest -q tests/test_models.py tests/test_classifier.py tests/test_folders.py tests/test_config.py tests/test_history.py tests/test_cross_platform_backends.py
+
+      - name: Build Linux standalone application
+        run: |
+          .venv/bin/pyinstaller \
+            --name "speaksync" \
+            --onedir \
+            --noconfirm \
+            --clean \
+            --add-data "assets:assets" \
+            --hidden-import "soundobj" \
+            --hidden-import "prism" \
+            --hidden-import "pynput" \
+            --hidden-import "pynput.keyboard._xorg" \
+            --hidden-import "pynput.mouse._xorg" \
+            src/speak_sync/__main__.py
+
+      - name: Create Linux release archive
+        run: |
+          cd dist
+          tar -czvf SpeakSync-v0.1.0-linux-x86_64.tar.gz speaksync/
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpeakSync-Linux-Tarball
+          path: dist/SpeakSync-v0.1.0-linux-x86_64.tar.gz
+          if-no-files-found: error
