@@ -179,6 +179,38 @@ You can edit every setting through the **Manage Sources & Settings** dialog (`Al
 
 ---
 
+## Installation & Releases
+
+Pre-compiled standalone binaries for each release are available on the [Releases page](https://github.com/Aarushb/speak-sync/releases):
+
+- **Windows Setup Installer (`SpeakSync-v0.1.0-windows-setup.exe`)**: Modern per-user installer that requires no administrator privileges and includes an option to automatically start SpeakSync when Windows starts.
+- **Windows Portable ZIP (`SpeakSync-v0.1.0-windows-portable.zip`)**: Fully self-contained portable folder containing `speaksync.exe`, bundled earcons, and documentation. Extract anywhere and launch immediately.
+- **macOS Bundle (`SpeakSync-v0.1.0-macos.zip`)**: Standalone `SpeakSync.app` for macOS 12+.
+- **Linux Tarball (`SpeakSync-v0.1.0-linux-x86_64.tar.gz`)**: Standalone binary package for modern Linux distributions.
+
+---
+
+## Building from Source
+
+SpeakSync includes automated packaging scripts and a continuous integration matrix pipeline. For detailed platform-specific prerequisites and build commands for Windows, macOS, and Linux, refer to the [Building Guide](docs/BUILDING.md).
+
+Quick start on Windows:
+
+```powershell
+# Create virtual environment and install dependencies
+uv venv
+uv pip install --python .venv\Scripts\python.exe -e ".[test]"
+uv pip install --python .venv\Scripts\python.exe pyinstaller
+
+# Run tests
+.venv\Scripts\pytest.exe
+
+# Build portable zip and setup installer
+.venv\Scripts\python.exe scripts\build_windows.py
+```
+
+---
+
 ## Contributing & Feedback
 
 If you find SpeakSync useful, please consider starring the repository on GitHub so other screen reader and keyboard users can discover it. Bug reports, cloud client tooltip samples, and feature requests are always welcome in [GitHub Issues](https://github.com/Aarushb/speak-sync/issues), and pull requests are gladly accepted.
@@ -188,3 +220,4 @@ If you find SpeakSync useful, please consider starring the repository on GitHub 
 ## License
 
 Released under the [MIT License](LICENSE).
+
