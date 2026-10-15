@@ -12,13 +12,23 @@ from speak_sync.config import AppConfig
 
 logger = logging.getLogger(__name__)
 
-try:
-    import soundobj
+_SOUNDOBJ_MODULE: Any = None
+_SOUNDOBJ_INITIALIZED: bool = False
 
-    _SOUNDOBJ_AVAILABLE = True
-except ImportError:
-    soundobj = None
-    _SOUNDOBJ_AVAILABLE = False
+
+def _get_soundobj() -> Any:
+    global _SOUNDOBJ_MODULE, _SOUNDOBJ_INITIALIZED
+    if _SOUNDOBJ_INITIALIZED:
+        return _SOUNDOBJ_MODULE
+    _SOUNDOBJ_INITIALIZED = True
+    try:
+        import soundobj
+
+        _SOUNDOBJ_MODULE = soundobj
+    except Exception as exc:
+        logger.debug("soundobj is not available or failed to initialize: %s", exc)
+        _SOUNDOBJ_MODULE = None
+    return _SOUNDOBJ_MODULE
 
 
 def get_assets_dir() -> Path:
@@ -84,10 +94,11 @@ class AudioCueService:
 
     @staticmethod
     def _default_play_file(sound_path: Path) -> bool:
-        if not _SOUNDOBJ_AVAILABLE or soundobj is None:
+        so = _get_soundobj()
+        if so is None:
             return False
         try:
-            soundobj.play_sound(str(sound_path))
+            so.play_sound(str(sound_path))
             return True
         except Exception as exc:
             logger.debug("soundobj.play_sound(%s) failed: %s", sound_path, exc)
