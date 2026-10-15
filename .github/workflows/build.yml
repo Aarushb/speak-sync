@@ -100,23 +100,27 @@ jobs:
             --hidden-import "pynput.mouse._darwin" \
             src/speak_sync/__main__.py
 
-      - name: Create macOS release archive
+      - name: Create macOS DMG installer and portable zip
         run: |
           cd dist
-          zip -r SpeakSync-v0.1.0-macos.zip SpeakSync.app
+          zip -r SpeakSync-v0.1.0-macos-portable.zip SpeakSync.app
+          cd ..
+          hdiutil create -volname "SpeakSync" -srcfolder dist/SpeakSync.app -ov -format UDZO dist/SpeakSync-v0.1.0-macos-installer.dmg
 
-      - name: Upload macOS Artifact
+      - name: Upload macOS Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: SpeakSync-macOS-Bundle
-          path: dist/SpeakSync-v0.1.0-macos.zip
+          path: |
+            dist/SpeakSync-*-macos-portable.zip
+            dist/SpeakSync-*-macos-installer.dmg
           if-no-files-found: error
 
   build-linux:
-    name: Linux (Portable Tarball)
+    name: Linux (DEB Installer & Portable Tarball)
     runs-on: ubuntu-24.04
     continue-on-error: true
-    timeout-minutes: 15
+    timeout-minutes: 45
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -165,16 +169,32 @@ jobs:
             --hidden-import "pynput.mouse._xorg" \
             src/speak_sync/__main__.py
 
-      - name: Create Linux release archive
+      - name: Create Linux release packages
         run: |
           cd dist
-          tar -czvf SpeakSync-v0.1.0-linux-x86_64.tar.gz speaksync/
+          tar -czvf SpeakSync-v0.1.0-linux-portable.tar.gz speaksync/
+          cd ..
+          mkdir -p deb-pkg/DEBIAN deb-pkg/opt/speaksync deb-pkg/usr/local/bin
+          cp -r dist/speaksync/* deb-pkg/opt/speaksync/
+          ln -s /opt/speaksync/speaksync deb-pkg/usr/local/bin/speaksync
+          cat << 'EOF' > deb-pkg/DEBIAN/control
+          Package: speaksync
+          Version: 0.1.0
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Maintainer: Aarush Bhatnagar
+          Description: Accessible cloud sync tray monitor with Prism screen reader speech and audio cues.
+          EOF
+          dpkg-deb --build deb-pkg dist/SpeakSync-v0.1.0-linux-installer.deb
 
-      - name: Upload Linux Artifact
+      - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SpeakSync-Linux-Tarball
-          path: dist/SpeakSync-v0.1.0-linux-x86_64.tar.gz
+          name: SpeakSync-Linux-Bundle
+          path: |
+            dist/SpeakSync-*-linux-portable.tar.gz
+            dist/SpeakSync-*-linux-installer.deb
           if-no-files-found: ignore
 
   publish-release:
@@ -199,6 +219,8 @@ jobs:
           files: |
             release-artifacts/SpeakSync-Windows-Installer/*.exe
             release-artifacts/SpeakSync-Windows-Portable/*.zip
+            release-artifacts/SpeakSync-macOS-Bundle/*.dmg
             release-artifacts/SpeakSync-macOS-Bundle/*.zip
-            release-artifacts/SpeakSync-Linux-Tarball/*.tar.gz
+            release-artifacts/SpeakSync-Linux-Bundle/*.deb
+            release-artifacts/SpeakSync-Linux-Bundle/*.tar.gz
           generate_release_notes: true
