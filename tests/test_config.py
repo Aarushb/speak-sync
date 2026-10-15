@@ -55,6 +55,8 @@ def test_app_config_save_and_load_roundtrip(tmp_path: Path) -> None:
     cfg = AppConfig(
         poll_interval_seconds=2.5,
         enable_speech=False,
+        speak_startup_greeting=False,
+        startup_greeting_text="Custom startup announcement.",
         enable_loop_sound=False,
         hotkey_modifier="Ctrl+Shift+Win",
         strip_unread_notifications=True,
@@ -65,6 +67,8 @@ def test_app_config_save_and_load_roundtrip(tmp_path: Path) -> None:
     loaded = AppConfig.load(config_file)
     assert loaded.poll_interval_seconds == 2.5
     assert loaded.enable_speech is False
+    assert loaded.speak_startup_greeting is False
+    assert loaded.startup_greeting_text == "Custom startup announcement."
     assert loaded.enable_loop_sound is False
     assert loaded.hotkey_modifier == "Ctrl+Shift+Win"
     assert loaded.strip_unread_notifications is True

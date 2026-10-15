@@ -74,6 +74,13 @@ class SpeakSyncController(wx.EvtHandler):
         # Perform initial poll before constructing tray UI so initial slots are ready
         self.poll_once(is_initial=True)
 
+        if (
+            self.config.enable_speech
+            and self.config.speak_startup_greeting
+            and self.config.startup_greeting_text
+        ):
+            self.speech.output(self.config.startup_greeting_text, interrupt=False)
+
         if create_tray_ui and wx.App.Get() is not None:
             self.tray_icon = SpeakSyncTrayIcon(
                 config=self.config,

@@ -174,8 +174,13 @@ class ManageSourcesDialog(wx.Dialog):
             speech_parent,
             label="Strip &unread notification counts from Dropbox idle status",
         )
+        self.chk_speak_startup = wx.CheckBox(
+            speech_parent,
+            label='Speak &tribute greeting on startup ("SpeakSync, not by Valiant8086...")',
+        )
 
         self.chk_enable_speech.SetValue(self.working_config.enable_speech)
+        self.chk_speak_startup.SetValue(self.working_config.speak_startup_greeting)
         self.chk_speak_start.SetValue(self.working_config.speak_on_start_sync)
         self.chk_speak_finish.SetValue(self.working_config.speak_on_finish_sync)
         self.chk_speak_error.SetValue(self.working_config.speak_on_error_or_pause)
@@ -184,6 +189,7 @@ class ManageSourcesDialog(wx.Dialog):
 
         for chk in (
             self.chk_enable_speech,
+            self.chk_speak_startup,
             self.chk_speak_start,
             self.chk_speak_finish,
             self.chk_speak_error,
@@ -577,6 +583,7 @@ class ManageSourcesDialog(wx.Dialog):
     def apply_to_config(self) -> AppConfig:
         """Read all form controls into working_config and return it."""
         self.working_config.enable_speech = self.chk_enable_speech.GetValue()
+        self.working_config.speak_startup_greeting = self.chk_speak_startup.GetValue()
         self.working_config.speak_on_start_sync = self.chk_speak_start.GetValue()
         self.working_config.speak_on_finish_sync = self.chk_speak_finish.GetValue()
         self.working_config.speak_on_error_or_pause = self.chk_speak_error.GetValue()

@@ -108,6 +108,10 @@ class AppConfig:
 
     # Speech preferences
     enable_speech: bool = True
+    speak_startup_greeting: bool = True
+    startup_greeting_text: str = (
+        "SpeakSync, not by Valiant8086, is monitoring your cloud sync tray icons."
+    )
     speak_on_start_sync: bool = True
     speak_on_finish_sync: bool = True
     speak_on_error_or_pause: bool = True
@@ -180,6 +184,8 @@ class AppConfig:
             "sources": [s.to_dict() for s in self.sources],
             "poll_interval_seconds": self.poll_interval_seconds,
             "enable_speech": self.enable_speech,
+            "speak_startup_greeting": self.speak_startup_greeting,
+            "startup_greeting_text": self.startup_greeting_text,
             "speak_on_start_sync": self.speak_on_start_sync,
             "speak_on_finish_sync": self.speak_on_finish_sync,
             "speak_on_error_or_pause": self.speak_on_error_or_pause,
@@ -216,6 +222,13 @@ class AppConfig:
             sources=sources,
             poll_interval_seconds=poll_interval,
             enable_speech=bool(data.get("enable_speech", True)),
+            speak_startup_greeting=bool(data.get("speak_startup_greeting", True)),
+            startup_greeting_text=str(
+                data.get(
+                    "startup_greeting_text",
+                    "SpeakSync, not by Valiant8086, is monitoring your cloud sync tray icons.",
+                )
+            ),
             speak_on_start_sync=bool(data.get("speak_on_start_sync", True)),
             speak_on_finish_sync=bool(data.get("speak_on_finish_sync", True)),
             speak_on_error_or_pause=bool(data.get("speak_on_error_or_pause", True)),

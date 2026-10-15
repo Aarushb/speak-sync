@@ -59,8 +59,10 @@ def test_controller_end_to_end_transitions(wx_app: wx.App, tmp_path: Path) -> No
         register_hotkeys=False,
     )
     try:
-        # Initial poll should not speak or play start sound when idle
-        assert recorder.outputs == []
+        # Initial poll should speak startup tribute greeting when enabled
+        assert recorder.outputs == [
+            "SpeakSync, not by Valiant8086, is monitoring your cloud sync tray icons."
+        ]
         assert played_cues == []
 
         # Query Slot 1 and Slot 2 via hotkey callback
