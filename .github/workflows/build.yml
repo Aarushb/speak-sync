@@ -96,8 +96,7 @@ jobs:
             --hidden-import "soundobj" \
             --hidden-import "prism" \
             --hidden-import "prismatoid" \
-            --hidden-import "AppKit" 
-            --hidden-import "pynput" \
+            --hidden-import "AppKit" \n            --hidden-import "pynput" \
             --hidden-import "pynput.keyboard._darwin" \
             --hidden-import "pynput.mouse._darwin" \
             src/speak_sync/__main__.py

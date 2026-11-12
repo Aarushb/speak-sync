@@ -219,7 +219,7 @@ class MacOSTrayBackend(TrayBackend):
             )
             return proc.stdout if proc.returncode == 0 else ""
         except Exception as exc:
-            logger.debug("macOS menu bar command failed: %s", exc)
+            logger.debug("macOS menu bar command failed: %s", type(exc).__name__)
             return ""
 
     def get_tray_icons(self, *, strip_unread_notifications: bool = False) -> list[TrayIconItem]:

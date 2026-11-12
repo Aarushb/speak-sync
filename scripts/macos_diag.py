@@ -260,7 +260,7 @@ def run_variant(name: str, argv: list[str], env_extra: dict[str, str], wait: flo
     app_log = ""
     if name in ("source-app", "frozen-app") and os.path.exists(log_file):
         with open(log_file, encoding="utf-8", errors="replace") as handle:
-            app_log = handle.read()[-4000:]
+            app_log = handle.read()[:4000]
     return {
         "app_log": app_log,
         "variant": name,

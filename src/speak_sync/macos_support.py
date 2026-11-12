@@ -31,7 +31,7 @@ def setup_macos_file_logging() -> Path | None:
         path.parent.mkdir(parents=True, exist_ok=True)
         _log_stream = open(path, "w", encoding="utf-8", buffering=1)
         logging.basicConfig(
-            level=logging.DEBUG,
+            level=logging.INFO,
             stream=_log_stream,
             format="%(asctime)s %(levelname)s %(name)s: %(message)s",
             force=True,
