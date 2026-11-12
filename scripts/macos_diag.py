@@ -61,6 +61,18 @@ def list_all_status_windows() -> list[dict]:
     return out
 
 
+def dump_cocoa_state(tag: str) -> None:
+    """Print activation policy and every NSApp window with class, level, visibility and frame."""
+    import AppKit
+
+    app = AppKit.NSApplication.sharedApplication()
+    print(f"[{tag}] activationPolicy={app.activationPolicy()} isActive={app.isActive()} "
+          f"isRunning={app.isRunning()}", flush=True)
+    for win in app.windows():
+        print(f"[{tag}] window class={win.className()} level={win.level()} visible={win.isVisible()} "
+              f"frame={win.frame()}", flush=True)
+
+
 def child_control_pyobjc() -> None:
     """Child: create a plain NSStatusItem through pyobjc and run the Cocoa loop."""
     import AppKit
@@ -70,6 +82,11 @@ def child_control_pyobjc() -> None:
     item = AppKit.NSStatusBar.systemStatusBar().statusItemWithLength_(AppKit.NSSquareStatusItemLength)
     item.button().setTitle_("SS")
     print("control: status item created", flush=True)
+    import Foundation
+
+    Foundation.NSTimer.scheduledTimerWithTimeInterval_repeats_block_(
+        3.0, False, lambda _t: dump_cocoa_state("control")
+    )
     app.run()
 
 
@@ -108,6 +125,7 @@ def _wx_icon_setup(late: bool, accessory: bool, keepalive: str = "none") -> None
         wx.CallLater(500, make)
     else:
         make()
+    wx.CallLater(3000, dump_cocoa_state, f"wx late={late} accessory={accessory} keepalive={keepalive}")
     app.MainLoop()
 
 
@@ -163,7 +181,44 @@ def child_pyobjc_in_wx() -> None:
         print("pyobjc item created inside wx loop", flush=True)
 
     wx.CallLater(500, make)
+    wx.CallLater(3000, dump_cocoa_state, "pyobjc-in-wx")
     app.MainLoop()
+
+
+def child_pyobjc_in_wx_accessory() -> None:
+    """Child: as pyobjc-in-wx but forcing the Accessory policy right before creating the item."""
+    import wx
+    import AppKit
+
+    app = wx.App(False)
+    holder: dict = {"frame": wx.Frame(None, -1, "SpeakSyncHost")}
+
+    def make() -> None:
+        """Force Accessory policy, then create a plain NSStatusItem."""
+        ns_app = AppKit.NSApplication.sharedApplication()
+        ns_app.setActivationPolicy_(AppKit.NSApplicationActivationPolicyAccessory)
+        item = AppKit.NSStatusBar.systemStatusBar().statusItemWithLength_(AppKit.NSSquareStatusItemLength)
+        item.button().setTitle_("SS")
+        holder["item"] = item
+        print("pyobjc item created after forcing accessory", flush=True)
+
+    wx.CallLater(500, make)
+    wx.CallLater(3000, dump_cocoa_state, "pyobjc-in-wx-accessory")
+    app.MainLoop()
+
+
+def child_control_regular() -> None:
+    """Child: plain NSApp.run with a status item but without changing the activation policy."""
+    import AppKit
+    import Foundation
+
+    app = AppKit.NSApplication.sharedApplication()
+    item = AppKit.NSStatusBar.systemStatusBar().statusItemWithLength_(AppKit.NSSquareStatusItemLength)
+    item.button().setTitle_("SS")
+    Foundation.NSTimer.scheduledTimerWithTimeInterval_repeats_block_(
+        3.0, False, lambda _t: dump_cocoa_state("control-regular")
+    )
+    app.run()
 
 
 CHILD_VARIANTS = {
@@ -176,6 +231,8 @@ CHILD_VARIANTS = {
     "wx-late-frame": child_wx_late_frame,
     "wx-late-frame-accessory": child_wx_late_frame_accessory,
     "pyobjc-in-wx": child_pyobjc_in_wx,
+    "pyobjc-in-wx-accessory": child_pyobjc_in_wx_accessory,
+    "control-regular": child_control_regular,
 }
 
 
