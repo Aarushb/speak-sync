@@ -299,8 +299,8 @@ def main() -> int:
     for r in results:
         print(f"SUMMARY {r['variant']}: alive={r['alive_after_wait']} status_item={r['has_status_item']}")
         if r["app_log"]:
-            print(f"APPLOG {r['variant']}:
-{r['app_log']}")
+            print("APPLOG " + r["variant"] + ":")
+            print(r["app_log"])
     return 0
 
 
