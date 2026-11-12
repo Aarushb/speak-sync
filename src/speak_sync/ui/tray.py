@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import sys
 import wx
 import wx.adv
 
@@ -31,7 +32,12 @@ class SpeakSyncTrayIcon(wx.adv.TaskBarIcon):
         on_config_mutated: Callable[[], None],
         on_exit: Callable[[], None],
     ) -> None:
-        super().__init__()
+        icon_type = (
+            wx.adv.TBI_CUSTOM_STATUSITEM
+            if hasattr(wx.adv, "TBI_CUSTOM_STATUSITEM")
+            else wx.adv.TBI_DEFAULT_TYPE
+        )
+        super().__init__(iconType=icon_type)
         self.config = config
         self.monitor = monitor
         self._on_speak_slot = on_speak_slot
@@ -64,7 +70,8 @@ class SpeakSyncTrayIcon(wx.adv.TaskBarIcon):
         self._current_mode = mode
         self._current_tooltip = tooltip
         try:
-            icon = create_tray_icon(status_mode=mode, size=32)
+            size = 22 if sys.platform == "darwin" else 32
+            icon = create_tray_icon(status_mode=mode, size=size)
             self.SetIcon(icon, tooltip)
         except Exception:
             pass
