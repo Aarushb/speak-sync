@@ -11,139 +11,8 @@ import wx.adv
 logger = logging.getLogger(__name__)
 
 
-def configure_macos_status_bar_accessibility(label: str = "SpeakSync") -> bool:
-    """Find the native NSStatusBarButton in NSApp.windows and set its title & accessibilityLabel for VoiceOver."""
-    if sys.platform != "darwin" or not label:
-        return False
-    try:
-        import ctypes
-        import ctypes.util
-
-        lib_objc_path = ctypes.util.find_library("objc") or "/usr/lib/libobjc.A.dylib"
-        objc = ctypes.cdll.LoadLibrary(lib_objc_path)
-
-        objc.objc_getClass.restype = ctypes.c_void_p
-        objc.objc_getClass.argtypes = [ctypes.c_char_p]
-
-        objc.sel_registerName.restype = ctypes.c_void_p
-        objc.sel_registerName.argtypes = [ctypes.c_char_p]
-
-        msg_send_addr = ctypes.cast(objc.objc_msgSend, ctypes.c_void_p).value
-
-        def responds_to(obj, sel_name: str) -> bool:
-            if not obj:
-                return False
-            try:
-                sel = objc.sel_registerName(sel_name.encode("utf-8"))
-                sel_resp = objc.sel_registerName(b"respondsToSelector:")
-                proto = ctypes.CFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p)
-                return bool(proto(msg_send_addr)(obj, sel_resp, sel))
-            except Exception:
-                return False
-
-        def send_msg(receiver, sel_name: str, restype=ctypes.c_void_p, *args):
-            """Safely send an Objective-C message using CFUNCTYPE for ARM64/x86_64 ABI stability."""
-            if not receiver:
-                return None
-            if not responds_to(receiver, sel_name):
-                return None
-            sel = objc.sel_registerName(sel_name.encode("utf-8"))
-            arg_types = [ctypes.c_void_p, ctypes.c_void_p] + [t for t, _ in args]
-            proto = ctypes.CFUNCTYPE(restype, *arg_types)
-            fn = proto(msg_send_addr)
-            raw_args = [v for _, v in args]
-            return fn(receiver, sel, *raw_args)
-
-        NSApplication = objc.objc_getClass(b"NSApplication")
-        NSString = objc.objc_getClass(b"NSString")
-        if not NSApplication or not NSString:
-            return False
-
-        ns_app = send_msg(NSApplication, "sharedApplication", ctypes.c_void_p)
-        if not ns_app:
-            return False
-
-        windows = send_msg(ns_app, "windows", ctypes.c_void_p)
-        if not windows:
-            return False
-
-        win_count = send_msg(windows, "count", ctypes.c_ulong)
-        if not win_count:
-            return False
-
-        ns_label = send_msg(
-            NSString,
-            "stringWithUTF8String:",
-            ctypes.c_void_p,
-            (ctypes.c_char_p, label.encode("utf-8")),
-        )
-        if not ns_label:
-            return False
-
-        def configure_view(view_ptr) -> bool:
-            if not view_ptr:
-                return False
-            configured = False
-            try:
-                if responds_to(view_ptr, "setAccessibilityLabel:"):
-                    send_msg(view_ptr, "setAccessibilityLabel:", None, (ctypes.c_void_p, ns_label))
-                    configured = True
-                if responds_to(view_ptr, "setAccessibilityTitle:"):
-                    send_msg(view_ptr, "setAccessibilityTitle:", None, (ctypes.c_void_p, ns_label))
-                    configured = True
-                if responds_to(view_ptr, "setTitle:"):
-                    send_msg(view_ptr, "setTitle:", None, (ctypes.c_void_p, ns_label))
-                    configured = True
-                if responds_to(view_ptr, "setToolTip:"):
-                    send_msg(view_ptr, "setToolTip:", None, (ctypes.c_void_p, ns_label))
-            except Exception:
-                pass
-
-            if responds_to(view_ptr, "subviews"):
-                subviews = send_msg(view_ptr, "subviews", ctypes.c_void_p)
-                if subviews and responds_to(subviews, "count"):
-                    sub_count = send_msg(subviews, "count", ctypes.c_ulong)
-                    for j in range(sub_count or 0):
-                        sub = send_msg(subviews, "objectAtIndex:", ctypes.c_void_p, (ctypes.c_ulong, j))
-                        if sub and configure_view(sub):
-                            configured = True
-            return configured
-
-        matched = False
-        for i in range(win_count):
-            win = send_msg(windows, "objectAtIndex:", ctypes.c_void_p, (ctypes.c_ulong, i))
-            if not win:
-                continue
-
-            cls_name_obj = send_msg(win, "className", ctypes.c_void_p)
-            cls_name = (
-                send_msg(cls_name_obj, "UTF8String", ctypes.c_char_p)
-                if cls_name_obj
-                else b""
-            )
-
-            content_view = send_msg(win, "contentView", ctypes.c_void_p)
-            if b"StatusBar" in cls_name or b"StatusItem" in cls_name:
-                if content_view and configure_view(content_view):
-                    matched = True
-            elif content_view:
-                cv_cls_obj = send_msg(content_view, "className", ctypes.c_void_p)
-                cv_cls_name = (
-                    send_msg(cv_cls_obj, "UTF8String", ctypes.c_char_p)
-                    if cv_cls_obj
-                    else b""
-                )
-                if b"StatusBar" in cv_cls_name or b"Button" in cv_cls_name:
-                    if configure_view(content_view):
-                        matched = True
-
-        return matched
-    except Exception as exc:
-        logger.debug("Failed to configure macOS status bar accessibility: %s", exc)
-        return False
-
-
 from speak_sync.config import AppConfig
+from speak_sync.macos_support import describe_status_item_state, label_status_item_for_voiceover
 from speak_sync.core.folders import open_sync_folder, resolve_sync_folder
 from speak_sync.core.monitor import TrayMonitorService
 from speak_sync.models import SourceRule, TrayIconItem
@@ -189,12 +58,15 @@ class SpeakSyncTrayIcon(wx.adv.TaskBarIcon):
         self.update_icon_and_tooltip()
 
         if sys.platform == "darwin":
-            wx.CallAfter(configure_macos_status_bar_accessibility, "SpeakSync")
-            wx.CallLater(150, configure_macos_status_bar_accessibility, "SpeakSync")
-            wx.CallLater(500, configure_macos_status_bar_accessibility, "SpeakSync")
-            wx.CallLater(1500, configure_macos_status_bar_accessibility, "SpeakSync")
+            # The status item window only exists once the run loop is going, so label it a little later.
+            wx.CallLater(300, self._finish_macos_status_item_setup)
         else:
             self.Bind(wx.adv.EVT_TASKBAR_LEFT_DOWN, self._on_left_click)
+
+    def _finish_macos_status_item_setup(self) -> None:
+        """Label the status item for VoiceOver and log its state so a tester log shows whether it exists."""
+        labelled = label_status_item_for_voiceover("SpeakSync")
+        logger.info("Status item labelled=%s state: %s", labelled, describe_status_item_state())
 
     def _determine_mode(self) -> str:
         if self.monitor.has_active_transfer():
@@ -218,7 +90,7 @@ class SpeakSyncTrayIcon(wx.adv.TaskBarIcon):
             if not success:
                 logger.warning("wx.adv.TaskBarIcon.SetIcon returned False")
             if sys.platform == "darwin":
-                wx.CallAfter(configure_macos_status_bar_accessibility, "SpeakSync")
+                label_status_item_for_voiceover("SpeakSync")
         except Exception as exc:
             logger.exception("Failed to update tray icon: %s", exc)
 

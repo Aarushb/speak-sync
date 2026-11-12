@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -114,6 +115,18 @@ def run_cli_one_shot(
     return 0
 
 
+def create_host_frame():
+    """Create the hidden top-level frame that keeps the wx main loop running with no visible windows.
+
+    wx ends MainLoop as soon as the app has no top-level window. On Windows the hotkey service happens
+    to own one, but on macOS and Linux nothing does, so the process used to quit right after creating
+    the tray icon. The frame is never shown.
+    """
+    import wx
+
+    return wx.Frame(None, -1, "SpeakSync")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_arg_parser()
     args = parser.parse_args(argv)
@@ -126,17 +139,25 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         ensure_default_desktop()
 
+    from speak_sync.macos_support import setup_macos_file_logging
+
+    log_path = setup_macos_file_logging()
+
     import wx
     from speak_sync.app import SpeakSyncController
 
     app = wx.App(False)
     app.SetAppName("SpeakSync")
+    host_frame = create_host_frame()
+    if log_path is not None:
+        logging.getLogger(__name__).info("SpeakSync %s started, log at %s", __version__, log_path)
 
     try:
         controller = SpeakSyncController(config_path=args.config)
         if args.manage:
             wx.CallAfter(controller.open_manage_dialog)
         app.MainLoop()
+        host_frame.Destroy()
     except Exception as exc:
         import traceback
 

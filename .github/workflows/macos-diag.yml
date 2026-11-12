@@ -30,7 +30,7 @@ jobs:
           .venv/bin/pyinstaller --name "SpeakSync" --windowed --noconfirm --clean \
             --add-data "assets:assets" \
             --hidden-import "soundobj" --hidden-import "prism" --hidden-import "prismatoid" \
-            --hidden-import "pynput" --hidden-import "pynput.keyboard._darwin" --hidden-import "pynput.mouse._darwin" \
+            --hidden-import "AppKit" --hidden-import "pynput" --hidden-import "pynput.keyboard._darwin" --hidden-import "pynput.mouse._darwin" \
             src/speak_sync/__main__.py
           plutil -replace LSUIElement -bool true dist/SpeakSync.app/Contents/Info.plist
           codesign --force --deep -s - dist/SpeakSync.app

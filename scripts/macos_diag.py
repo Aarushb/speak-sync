@@ -256,7 +256,13 @@ def run_variant(name: str, argv: list[str], env_extra: dict[str, str], wait: flo
     except subprocess.TimeoutExpired:
         proc.kill()
         output, _ = proc.communicate()
+    log_file = os.path.expanduser("~/Library/Logs/SpeakSync/speaksync.log")
+    app_log = ""
+    if name in ("source-app", "frozen-app") and os.path.exists(log_file):
+        with open(log_file, encoding="utf-8", errors="replace") as handle:
+            app_log = handle.read()[-4000:]
     return {
+        "app_log": app_log,
         "variant": name,
         "alive_after_wait": alive,
         "exit_code": proc.returncode,
@@ -292,6 +298,9 @@ def main() -> int:
     print(json.dumps(results, indent=2))
     for r in results:
         print(f"SUMMARY {r['variant']}: alive={r['alive_after_wait']} status_item={r['has_status_item']}")
+        if r["app_log"]:
+            print(f"APPLOG {r['variant']}:
+{r['app_log']}")
     return 0
 
 
