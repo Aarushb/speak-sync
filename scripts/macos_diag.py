@@ -136,6 +136,36 @@ def child_wx_early_noexit() -> None:
     _wx_icon_setup(late=False, accessory=False, keepalive="noexit")
 
 
+def child_wx_late_frame() -> None:
+    """Child: status item created inside MainLoop, hidden frame keeping the loop alive."""
+    _wx_icon_setup(late=True, accessory=False, keepalive="frame")
+
+
+def child_wx_late_frame_accessory() -> None:
+    """Child: as wx-late-frame but with an Accessory activation policy set first."""
+    _wx_icon_setup(late=True, accessory=True, keepalive="frame")
+
+
+def child_pyobjc_in_wx() -> None:
+    """Child: wx app with a hidden frame, status item built directly through pyobjc inside MainLoop."""
+    import wx
+    import AppKit
+
+    app = wx.App(False)
+    frame = wx.Frame(None, -1, "SpeakSyncHost")
+    holder: dict = {"frame": frame}
+
+    def make() -> None:
+        """Create a plain NSStatusItem while wx owns the Cocoa run loop."""
+        item = AppKit.NSStatusBar.systemStatusBar().statusItemWithLength_(AppKit.NSSquareStatusItemLength)
+        item.button().setTitle_("SS")
+        holder["item"] = item
+        print("pyobjc item created inside wx loop", flush=True)
+
+    wx.CallLater(500, make)
+    app.MainLoop()
+
+
 CHILD_VARIANTS = {
     "control-pyobjc": child_control_pyobjc,
     "wx-early": child_wx_early,
@@ -143,6 +173,9 @@ CHILD_VARIANTS = {
     "wx-late-accessory": child_wx_late_accessory,
     "wx-early-frame": child_wx_early_frame,
     "wx-early-noexit": child_wx_early_noexit,
+    "wx-late-frame": child_wx_late_frame,
+    "wx-late-frame-accessory": child_wx_late_frame_accessory,
+    "pyobjc-in-wx": child_pyobjc_in_wx,
 }
 
 
