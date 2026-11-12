@@ -12,7 +12,11 @@ from speak_sync.backends import (
     create_tray_backend,
 )
 from speak_sync.backends.linux import parse_sni_registered_items
-from speak_sync.backends.macos import parse_macos_ax_menu_bar_lines
+from speak_sync.backends.macos import (
+    DEFAULT_MACOS_TARGET_PROCESSES,
+    build_macos_menu_bar_script,
+    parse_macos_ax_menu_bar_lines,
+)
 from speak_sync.models import TrayIconItem, TrayLocation
 
 
@@ -85,3 +89,25 @@ def test_macos_backend_and_ax_line_parser() -> None:
 
     backend = MacOSTrayBackend(command_runner=lambda _cmd: sample_output)
     assert len(backend.get_tray_icons()) == 3
+
+
+def test_build_macos_menu_bar_script() -> None:
+    script = build_macos_menu_bar_script(["Dropbox", "Nextcloud", "CustomSyncApp"])
+    assert '"Dropbox"' in script
+    assert '"Nextcloud"' in script
+    assert '"CustomSyncApp"' in script
+    assert "SystemUIServer" in script
+    assert "background only is false" in script
+    # Verify no loop over every background process
+    assert "background only is true" not in script
+
+
+def test_macos_candidate_processes_update() -> None:
+    backend = MacOSTrayBackend(candidate_processes=["Koofr"])
+    assert "Koofr" in backend.candidate_processes
+    assert "Dropbox" in backend.candidate_processes
+
+    backend.update_candidate_processes(["MegaSync"])
+    assert "MegaSync" in backend.candidate_processes
+    assert "Dropbox" in backend.candidate_processes
+

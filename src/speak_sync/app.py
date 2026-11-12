@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+import threading
 import wx
 
 from speak_sync.backends import TrayBackend, create_tray_backend
@@ -54,7 +55,8 @@ class SpeakSyncController(wx.EvtHandler):
         super().__init__()
         self.config_path = config_path
         self.config = config or AppConfig.load(config_path)
-        self.backend = backend or create_tray_backend()
+        candidate_procs = [r.display_name for r in self.config.sources]
+        self.backend = backend or create_tray_backend(candidate_processes=candidate_procs)
         self.monitor = TrayMonitorService(self.backend, self.config)
         self.speech = speech_service or SpeechService(enabled=self.config.enable_speech)
         self.audio = audio_service or AudioCueService(self.config)
@@ -70,6 +72,8 @@ class SpeakSyncController(wx.EvtHandler):
         self._poll_timer: wx.Timer | None = None
         self._manage_dialog_open: bool = False
         self._shortcuts_dialog_open: bool = False
+        self._is_polling: bool = False
+        self._poll_lock = threading.Lock()
 
         # Perform initial poll before constructing tray UI so initial slots are ready
         self.poll_once(is_initial=True)
@@ -112,10 +116,45 @@ class SpeakSyncController(wx.EvtHandler):
         self._poll_timer.Start(interval_ms)
 
     def _on_timer_tick(self, _event: wx.TimerEvent) -> None:
-        self.poll_once(is_initial=False)
+        if self._manage_dialog_open or self._shortcuts_dialog_open:
+            return
+        self.trigger_async_poll()
+
+    def trigger_async_poll(self) -> None:
+        """Execute a poll cycle in a background worker thread so the wx GUI main thread never freezes."""
+        with self._poll_lock:
+            if self._is_polling:
+                return
+            self._is_polling = True
+
+        threading.Thread(target=self._run_background_poll, daemon=True).start()
+
+    def _run_background_poll(self) -> None:
+        try:
+            events = self.monitor.poll()
+            has_active = self.monitor.has_active_transfer()
+            if wx.App.Get() is not None:
+                wx.CallAfter(self._on_poll_completed, events, has_active)
+            else:
+                self._on_poll_completed(events, has_active)
+        except Exception as exc:
+            logger.debug("Background poll failed: %s", exc)
+        finally:
+            with self._poll_lock:
+                self._is_polling = False
+
+    def _on_poll_completed(self, events: list[Any], has_active_transfer: bool) -> None:
+        for event in events:
+            if self.monitor.should_speak_event(event, is_initial_poll=False):
+                self.speech.output(event.spoken_announcement, interrupt=False)
+
+        self.audio.update_sync_activity(has_active_transfer)
+
+        if self.tray_icon is not None:
+            self.tray_icon.update_icon_and_tooltip()
 
     def poll_once(self, *, is_initial: bool = False) -> None:
-        """Execute one tray polling cycle, dispatching speech and audio cues as needed."""
+        """Execute one tray polling cycle synchronously (used on startup or test suites)."""
         events = self.monitor.poll()
 
         for event in events:
@@ -175,6 +214,8 @@ class SpeakSyncController(wx.EvtHandler):
         self.speech.enabled = self.config.enable_speech
         self.config.save(self.config_path)
         set_autostart_enabled(self.config.run_on_startup)
+        if hasattr(self.backend, "update_candidate_processes"):
+            self.backend.update_candidate_processes([r.display_name for r in self.config.sources])
 
         self._start_poll_timer()
         self.hotkeys.start(
@@ -190,8 +231,9 @@ class SpeakSyncController(wx.EvtHandler):
         if self._manage_dialog_open:
             return
         self._manage_dialog_open = True
+        if self._poll_timer is not None and self._poll_timer.IsRunning():
+            self._poll_timer.Stop()
         try:
-            self.monitor.poll()
             dlg = ManageSourcesDialog(
                 None,
                 self.config,
@@ -199,26 +241,32 @@ class SpeakSyncController(wx.EvtHandler):
                 self.audio,
                 on_apply_callback=self.on_config_updated,
             )
+            dlg.Raise()
             try:
                 dlg.ShowModal()
             finally:
                 dlg.Destroy()
         finally:
             self._manage_dialog_open = False
+            self._start_poll_timer()
 
     def open_shortcuts_dialog(self) -> None:
         """Open the Keyboard Shortcuts Reference dialog if not already open."""
         if self._shortcuts_dialog_open:
             return
         self._shortcuts_dialog_open = True
+        if self._poll_timer is not None and self._poll_timer.IsRunning():
+            self._poll_timer.Stop()
         try:
             dlg = ShortcutReferenceDialog(None, modifier=self.config.hotkey_modifier)
+            dlg.Raise()
             try:
                 dlg.ShowModal()
             finally:
                 dlg.Destroy()
         finally:
             self._shortcuts_dialog_open = False
+            self._start_poll_timer()
 
     def shutdown(self) -> None:
         """Stop timers, unregister hotkeys, remove tray icon, and exit main loop."""

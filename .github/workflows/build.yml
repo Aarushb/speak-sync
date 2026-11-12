@@ -95,10 +95,15 @@ jobs:
             --add-data "assets:assets" \
             --hidden-import "soundobj" \
             --hidden-import "prism" \
+            --hidden-import "prismatoid" \
             --hidden-import "pynput" \
             --hidden-import "pynput.keyboard._darwin" \
             --hidden-import "pynput.mouse._darwin" \
             src/speak_sync/__main__.py
+
+      - name: Configure macOS bundle metadata
+        run: |
+          plutil -replace LSUIElement -bool true dist/SpeakSync.app/Contents/Info.plist
 
       - name: Create macOS DMG installer and portable zip
         run: |

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from speak_sync.services.hotkey import (
     MOD_ALT,
     MOD_CONTROL,
@@ -78,3 +80,31 @@ def test_global_hotkey_service_single_and_double_press() -> None:
 
     svc.handle_manage_trigger()
     assert len(manage_calls) == 1
+
+
+def test_hotkey_service_no_wx_frame_on_non_windows(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+
+    monkeypatch.setattr(sys, "platform", "darwin")
+
+    class DummyApp:
+        @staticmethod
+        def Get():
+            return object()
+
+    class DummyModule:
+        App = DummyApp
+
+        class Frame:
+            def __init__(self, *args, **kwargs):
+                raise AssertionError("Frame should never be instantiated on non-Windows")
+
+    svc = GlobalHotkeyService(
+        on_slot_hotkey=lambda _s, _d: None,
+        on_summary_hotkey=lambda: None,
+        on_manage_hotkey=lambda: None,
+    )
+    # On darwin, start should NOT attempt to create wx.Frame
+    svc.start(wx_module=DummyModule)
+    assert svc._wx_host_frame is None
+

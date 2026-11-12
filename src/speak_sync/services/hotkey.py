@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 import time
 from collections.abc import Callable
 from typing import Any
@@ -281,8 +282,12 @@ class GlobalHotkeyService:
         registered_any = False
         unregistered_specs: dict[str, Callable[[], None]] = dict(spec_map)
 
-        # 1. Try native OS registration via hidden wx.Frame if wx is active
-        if wx_module is not None and wx_module.App.Get() is not None:
+        # 1. Try native Win32 registration via hidden wx.Frame on Windows only
+        if (
+            sys.platform == "win32"
+            and wx_module is not None
+            and wx_module.App.Get() is not None
+        ):
             try:
                 frame = wx_module.Frame(None, -1, "SpeakSyncHotkeyHost")
                 self._wx_host_frame = frame
