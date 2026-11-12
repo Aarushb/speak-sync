@@ -73,8 +73,11 @@ def child_control_pyobjc() -> None:
     app.run()
 
 
-def _wx_icon_setup(late: bool, accessory: bool) -> None:
-    """Child helper: build a wx TaskBarIcon either before or after the main loop starts."""
+def _wx_icon_setup(late: bool, accessory: bool, keepalive: str = "none") -> None:
+    """Child helper: build a wx TaskBarIcon before or after the main loop, with an optional keep-alive.
+
+    keepalive is "none", "frame" (hidden top-level wx.Frame) or "noexit" (SetExitOnFrameDelete(False)).
+    """
     import wx
     import wx.adv
 
@@ -82,6 +85,10 @@ def _wx_icon_setup(late: bool, accessory: bool) -> None:
 
     app = wx.App(False)
     holder: dict = {}
+    if keepalive == "frame":
+        holder["frame"] = wx.Frame(None, -1, "SpeakSyncHost")
+    elif keepalive == "noexit":
+        app.SetExitOnFrameDelete(False)
 
     def make() -> None:
         """Create the status item and report the result."""
@@ -119,11 +126,23 @@ def child_wx_late_accessory() -> None:
     _wx_icon_setup(late=True, accessory=True)
 
 
+def child_wx_early_frame() -> None:
+    """Child: status item before MainLoop, with a hidden top-level frame keeping the loop alive."""
+    _wx_icon_setup(late=False, accessory=False, keepalive="frame")
+
+
+def child_wx_early_noexit() -> None:
+    """Child: status item before MainLoop, with SetExitOnFrameDelete(False)."""
+    _wx_icon_setup(late=False, accessory=False, keepalive="noexit")
+
+
 CHILD_VARIANTS = {
     "control-pyobjc": child_control_pyobjc,
     "wx-early": child_wx_early,
     "wx-late": child_wx_late,
     "wx-late-accessory": child_wx_late_accessory,
+    "wx-early-frame": child_wx_early_frame,
+    "wx-early-noexit": child_wx_early_noexit,
 }
 
 
@@ -131,12 +150,15 @@ def run_variant(name: str, argv: list[str], env_extra: dict[str, str], wait: flo
     """Start one variant, wait, inspect its windows, terminate it and return a result record."""
     env = dict(os.environ)
     env.update(env_extra)
+    baseline = len(list_all_status_windows())
     proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
     time.sleep(wait)
     alive = proc.poll() is None
     windows = list_windows_for_pid(proc.pid) if alive else []
     status_windows = [w for w in windows if w["layer"] == STATUS_WINDOW_LAYER]
     system_status = list_all_status_windows()
+    # On recent macOS the window server attributes status items to Control Center, so compare counts.
+    added = len(system_status) - baseline if alive else 0
     if alive:
         proc.terminate()
     try:
@@ -150,7 +172,8 @@ def run_variant(name: str, argv: list[str], env_extra: dict[str, str], wait: flo
         "exit_code": proc.returncode,
         "own_windows": windows,
         "own_status_layer_windows": status_windows,
-        "has_status_item": bool(status_windows),
+        "has_status_item": bool(status_windows) or added > 0,
+        "status_windows_added": added,
         "all_status_layer_windows_on_machine": system_status,
         "output_tail": output[-3000:],
     }
