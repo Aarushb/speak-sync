@@ -101,14 +101,16 @@ jobs:
             --hidden-import "pynput.mouse._darwin" \
             src/speak_sync/__main__.py
 
-      - name: Configure macOS bundle metadata
+      - name: Configure macOS bundle metadata and sign bundle
         run: |
           plutil -replace LSUIElement -bool true dist/SpeakSync.app/Contents/Info.plist
+          codesign --force --deep -s - dist/SpeakSync.app
+          codesign --verify --deep --strict dist/SpeakSync.app
 
       - name: Create macOS DMG installer and portable zip
         run: |
           cd dist
-          zip -r SpeakSync-v0.1.0-macos-portable.zip SpeakSync.app
+          zip -r -y SpeakSync-v0.1.0-macos-portable.zip SpeakSync.app
           cd ..
           hdiutil create -volname "SpeakSync" -srcfolder dist/SpeakSync.app -ov -format UDZO dist/SpeakSync-v0.1.0-macos-installer.dmg
 
