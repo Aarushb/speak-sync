@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+import sys
 import threading
 import wx
 
@@ -108,6 +109,37 @@ class SpeakSyncController(wx.EvtHandler):
                 self.config.manage_hotkey,
                 wx_module=wx if wx.App.Get() is not None else None,
             )
+
+        if sys.platform == "darwin" and wx.App.Get() is not None:
+            wx.CallAfter(self._release_macos_windowless_focus)
+
+    def _release_macos_windowless_focus(self) -> None:
+        """Release any active keyboard/window focus if running purely as a status bar accessory."""
+        if sys.platform != "darwin":
+            return
+        try:
+            import ctypes
+            import ctypes.util
+
+            lib_path = ctypes.util.find_library("objc") or "/usr/lib/libobjc.A.dylib"
+            objc = ctypes.cdll.LoadLibrary(lib_path)
+            msg_send_addr = ctypes.cast(objc.objc_msgSend, ctypes.c_void_p).value
+            objc.objc_getClass.restype = ctypes.c_void_p
+            objc.objc_getClass.argtypes = [ctypes.c_char_p]
+            objc.sel_registerName.restype = ctypes.c_void_p
+            objc.sel_registerName.argtypes = [ctypes.c_char_p]
+
+            NSApplication = objc.objc_getClass(b"NSApplication")
+            if not NSApplication:
+                return
+            sel_shared = objc.sel_registerName(b"sharedApplication")
+            sel_deactivate = objc.sel_registerName(b"deactivate")
+            proto = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p)
+            ns_app = proto(msg_send_addr)(NSApplication, sel_shared)
+            if ns_app:
+                proto(msg_send_addr)(ns_app, sel_deactivate)
+        except Exception as exc:
+            logger.debug("Failed to release windowless focus: %s", exc)
 
     def _start_poll_timer(self) -> None:
         if self._poll_timer is None:

@@ -104,6 +104,9 @@ jobs:
       - name: Configure macOS bundle metadata and sign bundle
         run: |
           plutil -replace LSUIElement -bool true dist/SpeakSync.app/Contents/Info.plist
+          plutil -replace CFBundleName -string "SpeakSync" dist/SpeakSync.app/Contents/Info.plist
+          plutil -replace CFBundleDisplayName -string "SpeakSync" dist/SpeakSync.app/Contents/Info.plist
+          plutil -replace NSAppleEventsUsageDescription -string "SpeakSync monitors cloud sync status in the menu bar." dist/SpeakSync.app/Contents/Info.plist
           codesign --force --deep -s - dist/SpeakSync.app
           codesign --verify --deep --strict dist/SpeakSync.app
 
