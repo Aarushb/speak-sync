@@ -96,7 +96,8 @@ jobs:
             --hidden-import "soundobj" \
             --hidden-import "prism" \
             --hidden-import "prismatoid" \
-            --hidden-import "AppKit" \n            --hidden-import "pynput" \
+            --hidden-import "AppKit" \
+            --hidden-import "pynput" \
             --hidden-import "pynput.keyboard._darwin" \
             --hidden-import "pynput.mouse._darwin" \
             src/speak_sync/__main__.py
@@ -109,6 +110,16 @@ jobs:
           plutil -replace NSAppleEventsUsageDescription -string "SpeakSync monitors cloud sync status in the menu bar." dist/SpeakSync.app/Contents/Info.plist
           codesign --force --deep -s - dist/SpeakSync.app
           codesign --verify --deep --strict dist/SpeakSync.app
+
+      - name: Smoke test that the app stays running with a status item
+        run: |
+          dist/SpeakSync.app/Contents/MacOS/SpeakSync &
+          APP_PID=$!
+          sleep 12
+          kill -0 $APP_PID
+          cat ~/Library/Logs/SpeakSync/speaksync.log
+          grep -q "visible=True" ~/Library/Logs/SpeakSync/speaksync.log
+          kill $APP_PID
 
       - name: Create macOS DMG installer and portable zip
         run: |
