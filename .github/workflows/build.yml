@@ -119,8 +119,7 @@ jobs:
   build-linux:
     name: Linux (DEB Installer & Portable Tarball)
     runs-on: ubuntu-24.04
-    continue-on-error: true
-    timeout-minutes: 45
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -130,6 +129,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libgtk-3-dev \
+            libnotify-dev \
+            libsdl2-dev \
             libdbus-1-dev \
             libasound2-dev \
             libpulse-dev
@@ -147,7 +148,8 @@ jobs:
       - name: Create virtual environment and install dependencies
         run: |
           uv venv
-          uv pip install --python .venv/bin/python -e ".[test]"
+          uv pip install --python .venv/bin/python --only-binary wxpython --find-links https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04/ "wxpython<=4.2.5"
+          uv pip install --python .venv/bin/python --only-binary wxpython --find-links https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04/ -e ".[test]"
           uv pip install --python .venv/bin/python pyinstaller
 
       - name: Run cross-platform test suite
@@ -164,6 +166,7 @@ jobs:
             --add-data "assets:assets" \
             --hidden-import "soundobj" \
             --hidden-import "prism" \
+            --hidden-import "prismatoid" \
             --hidden-import "pynput" \
             --hidden-import "pynput.keyboard._xorg" \
             --hidden-import "pynput.mouse._xorg" \
@@ -195,11 +198,11 @@ jobs:
           path: |
             dist/SpeakSync-*-linux-portable.tar.gz
             dist/SpeakSync-*-linux-installer.deb
-          if-no-files-found: ignore
+          if-no-files-found: error
 
   publish-release:
     name: Publish GitHub Release
-    needs: [build-windows, build-macos]
+    needs: [build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
