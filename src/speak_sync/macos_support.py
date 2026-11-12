@@ -51,15 +51,18 @@ def _status_bar_windows() -> list:
     return [w for w in app.windows() if "StatusBar" in str(w.className())]
 
 
-def _label_view(view, label: str) -> bool:
-    """Set the VoiceOver label and title on a view and all its subviews; return True if any was set."""
+def _label_view(view, label: str, tree: list[str], depth: int = 0) -> bool:
+    """Set the VoiceOver label and title on a view and its subviews; record class names in tree."""
     done = False
+    tree.append("  " * depth + str(view.className()))
     for setter in ("setAccessibilityLabel_", "setAccessibilityTitle_"):
-        if view.respondsToSelector_(setter):
+        try:
             getattr(view, setter)(label)
             done = True
+        except Exception:
+            pass
     for sub in view.subviews() or []:
-        if _label_view(sub, label):
+        if _label_view(sub, label, tree, depth + 1):
             done = True
     return done
 
@@ -70,10 +73,12 @@ def label_status_item_for_voiceover(label: str = "SpeakSync") -> bool:
         return False
     try:
         labelled = False
+        tree: list[str] = []
         for win in _status_bar_windows():
             content = win.contentView()
-            if content is not None and _label_view(content, label):
+            if content is not None and _label_view(content, label, tree):
                 labelled = True
+        logger.info("Status item view tree: %s", " | ".join(tree))
         return labelled
     except Exception as exc:
         logger.debug("Could not label the status item: %s", exc)
