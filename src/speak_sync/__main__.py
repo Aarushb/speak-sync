@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from speak_sync import __version__
+from speak_sync.buildinfo import COMMIT
 from speak_sync.backends import TrayBackend, create_tray_backend
 from speak_sync.config import AppConfig
 from speak_sync.core.monitor import TrayMonitorService
@@ -124,7 +125,7 @@ def create_host_frame():
     """
     import wx
 
-    return wx.Frame(None, -1, "SpeakSync")
+    return wx.Frame(None, -1, "SpeakSyncHost")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -150,7 +151,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     app.SetAppName("SpeakSync")
     host_frame = create_host_frame()
     if log_path is not None:
-        logging.getLogger(__name__).info("SpeakSync %s started, log at %s", __version__, log_path)
+        logging.getLogger(__name__).info("SpeakSync %s (build %s) started, log at %s", __version__, COMMIT, log_path)
 
     try:
         controller = SpeakSyncController(config_path=args.config)

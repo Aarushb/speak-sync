@@ -95,7 +95,9 @@ def describe_status_item_state() -> str:
         app = AppKit.NSApplication.sharedApplication()
         windows = _status_bar_windows()
         details = ", ".join(
-            f"level={w.level()} visible={w.isVisible()} width={w.frame().size.width}" for w in windows
+            f"level={w.level()} visible={w.isVisible()} x={w.frame().origin.x} y={w.frame().origin.y} "
+            f"width={w.frame().size.width}"
+            for w in windows
         )
         return (
             f"activationPolicy={app.activationPolicy()} running={app.isRunning()} "
@@ -103,3 +105,47 @@ def describe_status_item_state() -> str:
         )
     except Exception as exc:
         return f"state unavailable: {exc}"
+
+
+def describe_all_windows_and_screens() -> str:
+    """Return every window this app owns and every screen frame, to identify stray windows and notch issues."""
+    if sys.platform != "darwin":
+        return "not macOS"
+    try:
+        import AppKit
+
+        app = AppKit.NSApplication.sharedApplication()
+        wins = [
+            f"class={w.className()} title={w.title()!r} visible={w.isVisible()} level={w.level()} "
+            f"alpha={w.alphaValue()} frame=({w.frame().origin.x},{w.frame().origin.y},"
+            f"{w.frame().size.width},{w.frame().size.height})"
+            for w in app.windows()
+        ]
+        screens = [
+            f"({s.frame().origin.x},{s.frame().origin.y},{s.frame().size.width},{s.frame().size.height})"
+            for s in AppKit.NSScreen.screens()
+        ]
+        return f"windows: {wins} screens: {screens}"
+    except Exception as exc:
+        return f"windows unavailable: {exc}"
+
+
+def hide_host_window_from_users() -> bool:
+    """Make the keep-alive frame invisible, click-through and unreachable by VoiceOver."""
+    if sys.platform != "darwin":
+        return False
+    try:
+        import AppKit
+
+        hidden = False
+        for win in AppKit.NSApplication.sharedApplication().windows():
+            if str(win.title()) == "SpeakSyncHost":
+                win.setAlphaValue_(0.0)
+                win.setIgnoresMouseEvents_(True)
+                win.setAccessibilityElement_(False)
+                win.orderOut_(None)
+                hidden = True
+        return hidden
+    except Exception as exc:
+        logger.debug("Could not hide host window: %s", exc)
+        return False

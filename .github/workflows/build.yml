@@ -85,6 +85,10 @@ jobs:
         run: |
           .venv/bin/pytest -q tests/test_models.py tests/test_classifier.py tests/test_folders.py tests/test_config.py tests/test_history.py tests/test_cross_platform_backends.py
 
+      - name: Stamp build commit
+        run: |
+          echo "COMMIT = \"${GITHUB_SHA::7}\"" > src/speak_sync/buildinfo.py
+
       - name: Build macOS standalone application
         run: |
           .venv/bin/pyinstaller \

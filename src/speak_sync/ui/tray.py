@@ -12,7 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 from speak_sync.config import AppConfig
-from speak_sync.macos_support import describe_status_item_state, label_status_item_for_voiceover
+from speak_sync.macos_support import (
+    describe_all_windows_and_screens,
+    describe_status_item_state,
+    hide_host_window_from_users,
+    label_status_item_for_voiceover,
+)
 from speak_sync.core.folders import open_sync_folder, resolve_sync_folder
 from speak_sync.core.monitor import TrayMonitorService
 from speak_sync.models import SourceRule, TrayIconItem
@@ -66,7 +71,10 @@ class SpeakSyncTrayIcon(wx.adv.TaskBarIcon):
     def _finish_macos_status_item_setup(self) -> None:
         """Label the status item for VoiceOver and log its state so a tester log shows whether it exists."""
         labelled = label_status_item_for_voiceover("SpeakSync")
+        hide_host_window_from_users()
         logger.info("Status item labelled=%s state: %s", labelled, describe_status_item_state())
+        logger.info("App windows and screens: %s", describe_all_windows_and_screens())
+        wx.CallLater(4000, lambda: logger.info("Later state: %s", describe_all_windows_and_screens()))
 
     def _determine_mode(self) -> str:
         if self.monitor.has_active_transfer():
