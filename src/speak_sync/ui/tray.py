@@ -30,9 +30,22 @@ def configure_macos_status_bar_accessibility(label: str = "SpeakSync") -> bool:
 
         msg_send_addr = ctypes.cast(objc.objc_msgSend, ctypes.c_void_p).value
 
+        def responds_to(obj, sel_name: str) -> bool:
+            if not obj:
+                return False
+            try:
+                sel = objc.sel_registerName(sel_name.encode("utf-8"))
+                sel_resp = objc.sel_registerName(b"respondsToSelector:")
+                proto = ctypes.CFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p)
+                return bool(proto(msg_send_addr)(obj, sel_resp, sel))
+            except Exception:
+                return False
+
         def send_msg(receiver, sel_name: str, restype=ctypes.c_void_p, *args):
             """Safely send an Objective-C message using CFUNCTYPE for ARM64/x86_64 ABI stability."""
             if not receiver:
+                return None
+            if not responds_to(receiver, sel_name):
                 return None
             sel = objc.sel_registerName(sel_name.encode("utf-8"))
             arg_types = [ctypes.c_void_p, ctypes.c_void_p] + [t for t, _ in args]
@@ -72,21 +85,28 @@ def configure_macos_status_bar_accessibility(label: str = "SpeakSync") -> bool:
                 return False
             configured = False
             try:
-                send_msg(view_ptr, "setAccessibilityLabel:", None, (ctypes.c_void_p, ns_label))
-                send_msg(view_ptr, "setAccessibilityTitle:", None, (ctypes.c_void_p, ns_label))
-                send_msg(view_ptr, "setTitle:", None, (ctypes.c_void_p, ns_label))
-                send_msg(view_ptr, "setToolTip:", None, (ctypes.c_void_p, ns_label))
-                configured = True
+                if responds_to(view_ptr, "setAccessibilityLabel:"):
+                    send_msg(view_ptr, "setAccessibilityLabel:", None, (ctypes.c_void_p, ns_label))
+                    configured = True
+                if responds_to(view_ptr, "setAccessibilityTitle:"):
+                    send_msg(view_ptr, "setAccessibilityTitle:", None, (ctypes.c_void_p, ns_label))
+                    configured = True
+                if responds_to(view_ptr, "setTitle:"):
+                    send_msg(view_ptr, "setTitle:", None, (ctypes.c_void_p, ns_label))
+                    configured = True
+                if responds_to(view_ptr, "setToolTip:"):
+                    send_msg(view_ptr, "setToolTip:", None, (ctypes.c_void_p, ns_label))
             except Exception:
                 pass
 
-            subviews = send_msg(view_ptr, "subviews", ctypes.c_void_p)
-            if subviews:
-                sub_count = send_msg(subviews, "count", ctypes.c_ulong)
-                for j in range(sub_count or 0):
-                    sub = send_msg(subviews, "objectAtIndex:", ctypes.c_void_p, (ctypes.c_ulong, j))
-                    if sub and configure_view(sub):
-                        configured = True
+            if responds_to(view_ptr, "subviews"):
+                subviews = send_msg(view_ptr, "subviews", ctypes.c_void_p)
+                if subviews and responds_to(subviews, "count"):
+                    sub_count = send_msg(subviews, "count", ctypes.c_ulong)
+                    for j in range(sub_count or 0):
+                        sub = send_msg(subviews, "objectAtIndex:", ctypes.c_void_p, (ctypes.c_ulong, j))
+                        if sub and configure_view(sub):
+                            configured = True
             return configured
 
         matched = False
@@ -194,11 +214,13 @@ class SpeakSyncTrayIcon(wx.adv.TaskBarIcon):
         try:
             size = 22 if sys.platform == "darwin" else 32
             icon = create_tray_icon(status_mode=mode, size=size)
-            self.SetIcon(icon, tooltip)
+            success = self.SetIcon(icon, tooltip)
+            if not success:
+                logger.warning("wx.adv.TaskBarIcon.SetIcon returned False")
             if sys.platform == "darwin":
                 wx.CallAfter(configure_macos_status_bar_accessibility, "SpeakSync")
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.exception("Failed to update tray icon: %s", exc)
 
     def _on_left_click(self, _event: wx.adv.TaskBarIconEvent) -> None:
         self._on_speak_summary()

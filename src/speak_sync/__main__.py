@@ -131,10 +131,30 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     app = wx.App(False)
     app.SetAppName("SpeakSync")
-    controller = SpeakSyncController(config_path=args.config)
-    if args.manage:
-        wx.CallAfter(controller.open_manage_dialog)
-    app.MainLoop()
+
+    try:
+        controller = SpeakSyncController(config_path=args.config)
+        if args.manage:
+            wx.CallAfter(controller.open_manage_dialog)
+        app.MainLoop()
+    except Exception as exc:
+        import traceback
+
+        tb = traceback.format_exc()
+        crash_log = Path.home() / ".speak_sync_crash.log"
+        try:
+            crash_log.write_text(tb, encoding="utf-8")
+        except Exception:
+            pass
+        try:
+            wx.MessageBox(
+                f"SpeakSync encountered an error on startup:\n\n{tb}",
+                "SpeakSync Error",
+                wx.ICON_ERROR,
+            )
+        except Exception:
+            pass
+        return 1
     return 0
 
 
