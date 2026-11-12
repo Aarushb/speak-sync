@@ -1,0 +1,56 @@
+name: macOS status item diagnostic
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [macos-diag]
+
+jobs:
+  diag:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install --python .venv/bin/python -e ".[test]"
+          uv pip install --python .venv/bin/python pyinstaller
+
+      - name: Build frozen app
+        run: |
+          .venv/bin/pyinstaller --name "SpeakSync" --windowed --noconfirm --clean \
+            --add-data "assets:assets" \
+            --hidden-import "soundobj" --hidden-import "prism" --hidden-import "prismatoid" \
+            --hidden-import "pynput" --hidden-import "pynput.keyboard._darwin" --hidden-import "pynput.mouse._darwin" \
+            src/speak_sync/__main__.py
+          plutil -replace LSUIElement -bool true dist/SpeakSync.app/Contents/Info.plist
+          codesign --force --deep -s - dist/SpeakSync.app
+
+      - name: Environment facts
+        run: |
+          sw_vers
+          .venv/bin/python -c "import wx; print('wx', wx.version())"
+          .venv/bin/python -c "import pynput; print('pynput ok')"
+          who
+          ps aux | grep -i -E "WindowServer|loginwindow" | head
+
+      - name: Run diagnostic
+        env:
+          PYTHONPATH: src
+        run: |
+          .venv/bin/python scripts/macos_diag.py --app-binary dist/SpeakSync.app/Contents/MacOS/SpeakSync | tee diag.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-diag
+          path: diag.json
