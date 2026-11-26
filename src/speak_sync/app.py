@@ -8,6 +8,7 @@ import sys
 import threading
 import wx
 
+from speak_sync import __version__
 from speak_sync.backends import TrayBackend, create_tray_backend
 from speak_sync.config import AppConfig
 from speak_sync.core.autostart import set_autostart_enabled
@@ -15,9 +16,11 @@ from speak_sync.core.monitor import TrayMonitorService
 from speak_sync.services.audio import AudioCueService
 from speak_sync.services.hotkey import GlobalHotkeyService
 from speak_sync.services.speech import SpeechService
+from speak_sync.services.updater import UpdateInfo, check_for_updates
 from speak_sync.ui.gui_helper import ShortcutReferenceDialog
 from speak_sync.ui.source_dialog import ManageSourcesDialog
 from speak_sync.ui.tray import SpeakSyncTrayIcon
+from speak_sync.ui.update_dialog import UpdateDialog
 
 logger = logging.getLogger(__name__)
 
@@ -73,8 +76,10 @@ class SpeakSyncController(wx.EvtHandler):
         self._poll_timer: wx.Timer | None = None
         self._manage_dialog_open: bool = False
         self._shortcuts_dialog_open: bool = False
+        self._update_dialog_open: bool = False
         self._is_polling: bool = False
         self._poll_lock = threading.Lock()
+        self.latest_update_info: UpdateInfo | None = None
 
         # Perform initial poll before constructing tray UI so initial slots are ready
         self.poll_once(is_initial=True)
@@ -97,10 +102,15 @@ class SpeakSyncController(wx.EvtHandler):
                 on_open_shortcuts_dialog=self.open_shortcuts_dialog,
                 on_config_mutated=self.on_config_updated,
                 on_exit=self.shutdown,
+                on_open_update_dialog=self.open_update_dialog,
+                on_check_for_updates=self.check_for_updates_manually,
             )
             self._poll_timer = wx.Timer(self)
             self.Bind(wx.EVT_TIMER, self._on_timer_tick, self._poll_timer)
             self._start_poll_timer()
+
+            if self.config.check_for_updates:
+                wx.CallLater(5000, self._start_background_update_check)
 
         if register_hotkeys:
             self.hotkeys.start(
@@ -268,6 +278,113 @@ class SpeakSyncController(wx.EvtHandler):
         finally:
             self._shortcuts_dialog_open = False
             self._start_poll_timer()
+
+    def _start_background_update_check(self) -> None:
+        """Launch background update verification in a daemon thread."""
+        threading.Thread(
+            target=self._background_update_check_worker,
+            daemon=True,
+            name="speaksync-bg-update-check",
+        ).start()
+
+    def _background_update_check_worker(self) -> None:
+        try:
+            info = check_for_updates(current_version=__version__)
+            if info is not None and info.is_newer:
+                wx.CallAfter(self._on_update_detected, info)
+        except Exception as exc:
+            logger.debug("Background update check failed: %s", exc)
+        finally:
+            # Reschedule subsequent check according to configured interval
+            interval_ms = max(60_000, int(self.config.update_check_interval_hours * 3600 * 1000))
+            if wx.App.Get() is not None:
+                wx.CallLater(interval_ms, self._start_background_update_check)
+
+    def _on_update_detected(self, info: UpdateInfo) -> None:
+        """Handle detected update on the main thread: notify user and update tray icon."""
+        self.latest_update_info = info
+        if self.tray_icon is not None:
+            self.tray_icon.set_update_info(info)
+
+        # Non-intrusive system notification
+        try:
+            if hasattr(wx.adv, "NotificationMessage"):
+                notif = wx.adv.NotificationMessage(
+                    title="SpeakSync Update Available",
+                    message=f"Version {info.version} is available. Open the system tray menu to review and install.",
+                )
+                notif.Show()
+        except Exception as exc:
+            logger.debug("Toast notification failed: %s", exc)
+
+        if self.config.enable_speech:
+            self.speech.output(
+                f"SpeakSync update version {info.version} is available. Open the system tray menu to review and install.",
+                interrupt=False,
+            )
+
+    def open_update_dialog(self, info: UpdateInfo | None = None) -> None:
+        """Open the accessible UpdateDialog."""
+        target_info = info or self.latest_update_info
+        if target_info is None:
+            self.check_for_updates_manually()
+            return
+
+        if self._update_dialog_open:
+            return
+        self._update_dialog_open = True
+        try:
+            dlg = UpdateDialog(
+                parent=None,
+                update_info=target_info,
+                speech_service=self.speech,
+                on_restart_callback=self.shutdown,
+            )
+            dlg.Raise()
+            try:
+                dlg.ShowModal()
+            finally:
+                dlg.Destroy()
+        finally:
+            self._update_dialog_open = False
+
+    def check_for_updates_manually(self) -> None:
+        """Manually trigger an update check and report findings directly to the user."""
+        if self.config.enable_speech:
+            self.speech.output("Checking for SpeakSync updates...", interrupt=True)
+
+        def _worker() -> None:
+            info = check_for_updates(current_version=__version__)
+            wx.CallAfter(self._on_manual_check_completed, info)
+
+        threading.Thread(
+            target=_worker,
+            daemon=True,
+            name="speaksync-manual-update-check",
+        ).start()
+
+    def _on_manual_check_completed(self, info: UpdateInfo | None) -> None:
+        if info is not None and info.is_newer:
+            self._on_update_detected(info)
+            self.open_update_dialog(info)
+        elif info is not None:
+            msg = f"SpeakSync is up to date. You are running the latest version ({__version__})."
+            if self.config.enable_speech:
+                self.speech.output(msg, interrupt=True)
+            wx.MessageBox(
+                f"You are running the latest version of SpeakSync ({__version__}).",
+                "SpeakSync Up to Date",
+                wx.OK | wx.ICON_INFORMATION,
+            )
+        else:
+            msg = "Unable to check for updates at this time. Please check your internet connection."
+            if self.config.enable_speech:
+                self.speech.output(msg, interrupt=True)
+            wx.MessageBox(
+                msg,
+                "Update Check Failed",
+                wx.OK | wx.ICON_WARNING,
+            )
 
     def shutdown(self) -> None:
         """Stop timers, unregister hotkeys, remove tray icon, and exit main loop."""

@@ -22,6 +22,7 @@ from speak_sync.core.folders import open_sync_folder, resolve_sync_folder
 from speak_sync.core.monitor import TrayMonitorService
 from speak_sync.models import SourceRule, TrayIconItem
 from speak_sync.services.hotkey import normalize_modifier_display
+from speak_sync.services.updater import UpdateInfo
 from speak_sync.ui.icon_gen import create_tray_icon
 from speak_sync.ui.tray_picker_dialog import infer_app_name_and_keyword, make_source_id
 
@@ -41,6 +42,8 @@ class SpeakSyncTrayIcon(wx.adv.TaskBarIcon):
         on_open_shortcuts_dialog: Callable[[], None],
         on_config_mutated: Callable[[], None],
         on_exit: Callable[[], None],
+        on_open_update_dialog: Callable[[], None] | None = None,
+        on_check_for_updates: Callable[[], None] | None = None,
     ) -> None:
         icon_type = (
             wx.adv.TBI_CUSTOM_STATUSITEM
@@ -57,6 +60,9 @@ class SpeakSyncTrayIcon(wx.adv.TaskBarIcon):
         self._on_open_shortcuts_dialog = on_open_shortcuts_dialog
         self._on_config_mutated = on_config_mutated
         self._on_exit = on_exit
+        self._on_open_update_dialog = on_open_update_dialog
+        self._on_check_for_updates = on_check_for_updates
+        self.latest_update_info: UpdateInfo | None = None
 
         self._current_mode: str = ""
         self._current_tooltip: str = ""
@@ -83,10 +89,18 @@ class SpeakSyncTrayIcon(wx.adv.TaskBarIcon):
             return "problem"
         return "idle"
 
+    def set_update_info(self, info: UpdateInfo | None) -> None:
+        """Update available release metadata and refresh tooltip / context menu."""
+        self.latest_update_info = info
+        self._current_tooltip = ""  # Force tooltip refresh
+        self.update_icon_and_tooltip()
+
     def update_icon_and_tooltip(self) -> None:
         """Refresh the tray icon graphic and tooltip only if state or summary changed."""
         mode = self._determine_mode()
         tooltip = self.monitor.format_tray_tooltip_summary()
+        if self.latest_update_info is not None and self.latest_update_info.is_newer:
+            tooltip = f"{tooltip} (Update v{self.latest_update_info.version} Available)"
         if mode == self._current_mode and tooltip == self._current_tooltip:
             return
         self._current_mode = mode
@@ -112,6 +126,17 @@ class SpeakSyncTrayIcon(wx.adv.TaskBarIcon):
     def build_context_menu(self) -> wx.Menu:
         """Construct and return the context menu with live source submenus and quick toggles."""
         menu = wx.Menu()
+
+        # 0. Prominent Update Alert
+        if self.latest_update_info is not None and self.latest_update_info.is_newer:
+            update_item = menu.Append(
+                wx.ID_ANY,
+                f"★ &Update Available (v{self.latest_update_info.version})...",
+            )
+            if self._on_open_update_dialog:
+                menu.Bind(wx.EVT_MENU, lambda _e: self._on_open_update_dialog(), update_item)
+            menu.AppendSeparator()
+
         mod = normalize_modifier_display(self.config.hotkey_modifier)
         active_slots = self.monitor.get_active_slots()
 
@@ -234,6 +259,10 @@ class SpeakSyncTrayIcon(wx.adv.TaskBarIcon):
         menu.Bind(wx.EVT_MENU, self._toggle_startup, chk_startup)
 
         menu.AppendSeparator()
+
+        if self._on_check_for_updates:
+            check_updates_item = menu.Append(wx.ID_ANY, "&Check for Updates...")
+            menu.Bind(wx.EVT_MENU, lambda _e: self._on_check_for_updates(), check_updates_item)
 
         shortcuts_item = menu.Append(wx.ID_ANY, "&Keyboard Shortcuts Reference\tF1")
         exit_item = menu.Append(wx.ID_EXIT, "E&xit")
