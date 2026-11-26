@@ -10,7 +10,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DIST_DIR = REPO_ROOT / "dist"
 BUILD_DIR = REPO_ROOT / "build"

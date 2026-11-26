@@ -2,7 +2,7 @@
 ; Generates a clean, accessible, modern Windows installer for SpeakSync
 
 #define MyAppName "SpeakSync"
-#define MyAppVersion "0.1.1"
+#define MyAppVersion "0.1.2"
 #define MyAppPublisher "Aarush Bhatnagar"
 #define MyAppURL "https://github.com/Aarushb/speak-sync"
 #define MyAppExeName "speaksync.exe"
