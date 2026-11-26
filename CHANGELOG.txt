@@ -1,9 +1,30 @@
-================================================================================
 SpeakSync Changelog
-================================================================================
 
-Version 0.1.1 (2026-11-26)
---------------------------------------------------------------------------------
+To jump between versions using Find (Ctrl+F), search for:
+  # for major versions (e.g. # 1.0.0)
+  ## for minor versions (e.g. ## 0.2.0)
+  ### for revision and patch updates (e.g. ### 0.1.2)
+
+### 0.1.2 (2026-11-26)
+- Automatic background update checks:
+  SpeakSync now checks for new releases periodically in the background without
+  interrupting your workflow.
+- System tray update notifications:
+  When an update is found, SpeakSync alerts you non-intrusively via a toast
+  notification and adds an "Update Available" item directly in your system tray
+  menu.
+- In-app changelog review and installation:
+  Selecting the update item shows you exactly what changed in the new version,
+  downloads the update with an accessible progress indicator, and automatically
+  installs and restarts the application.
+- Safe update fallback:
+  If a download or installation cannot complete automatically, a clear error is
+  displayed with a direct link to open the download page in your browser.
+- Search-friendly changelog:
+  Changelog entries now use standard search identifiers without clutter or
+  repetitive divider lines.
+
+### 0.1.1 (2026-11-26)
 - Faster status updates:
   Sync changes are now detected twice as fast, catching even brief file uploads.
 - Smaller download size:
@@ -19,24 +40,3 @@ Version 0.1.1 (2026-11-26)
 - Release changelog:
   Added this changelog file to all download packages so you can easily review
   what is new.
-
-
-Version 0.1.0 (2026-10-15)
---------------------------------------------------------------------------------
-- Multi-cloud sync monitoring:
-  Monitors status for Dropbox, Google Drive, OneDrive, Nextcloud, and other
-  cloud storage services in the background.
-- Screen reader accessibility:
-  Fully accessible with NVDA, JAWS, VoiceOver, Orca, and Windows speech.
-  Every button, status message, and dialog is labeled and keyboard accessible.
-- Audio cues:
-  Plays optional sound cues when syncing begins, while in progress, and when
-  completed.
-- Global keyboard shortcuts:
-  Press shortcuts anywhere to hear current sync status or open the settings.
-  Press a slot shortcut twice to copy the status directly to your clipboard.
-- Portable and installer packages:
-  Available as both a portable zero-install package and a standard installer
-  for Windows, Mac, and Linux.
-
-================================================================================
