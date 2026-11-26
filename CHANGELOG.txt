@@ -4,55 +4,39 @@ SpeakSync Changelog
 
 Version 0.1.1 (2026-11-26)
 --------------------------------------------------------------------------------
-New Features & Enhancements:
-* Faster Sync Detection:
-  - Reduced default background tray polling interval from 1.5s to 0.75s (750ms).
-  - Sync events for small or rapid file modifications are now caught reliably
-    with minimal latency (~21ms query duration, ~2.8% CPU footprint).
-* Polling Interval Help & Guidance:
-  - Added an accessible explanation label and tooltip in the Manage Sources &
-    Settings dialog (General Settings) explaining the trade-offs of lower vs.
-    higher polling intervals.
-* Lightweight OGG Vorbis Audio Earcons:
-  - Added compressed .ogg earcons (start.ogg, loopty.ogg, finish.ogg), cutting
-    the bundled audio asset size by 60% (from ~180 KB to ~69 KB).
-  - Audio resolver now seamlessly supports .ogg, .flac, and .wav formats with
-    automatic fallback.
-* Screen Reader Auto-Reconnection:
-  - SpeechService now automatically detects screen reader disconnects or
-    restarts (e.g. restarting NVDA) and seamlessly re-initializes connection
-    on the next announcement.
-* Windows UIA Stability for Portable Mode:
-  - Pre-compiled and bundled UIAutomationCore typelib (comtypes.gen) directly
-    into PyInstaller packaging so portable builds never need to compile COM
-    interfaces on the fly at runtime.
-* Comprehensive Changelog Bundled:
-  - CHANGELOG.txt is now included in all release archives (Windows portable zip
-    and installer, macOS DMG and zip, Linux DEB and tarball).
+- Faster status updates:
+  Sync changes are now detected twice as fast, catching even brief file uploads.
+- Smaller download size:
+  Sound cues now take up significantly less space with no loss in audio quality.
+- Screen reader reconnect:
+  If you restart NVDA, JAWS, or your screen reader, SpeakSync automatically
+  reconnects speech output without needing an app restart.
+- Portable version improvements:
+  The Windows portable version starts faster and runs more smoothly.
+- Settings guidance:
+  Added clear explanations in the settings window to help you adjust update
+  speed and performance.
+- Release changelog:
+  Added this changelog file to all download packages so you can easily review
+  what is new.
+
 
 Version 0.1.0 (2026-10-15)
 --------------------------------------------------------------------------------
-Initial Release:
-* Multi-Source Cloud Sync Monitoring:
-  - Support for Dropbox, Google Drive, Microsoft OneDrive, Nextcloud, Resilio,
-    Mega, iCloud, and custom user-defined tray rules.
-  - Automatic detection of both visible tray icons and hidden overflow icons
-    across Windows 10, Windows 11 (XAML NotifyItemIcon), macOS, and Linux.
-* Screen Reader Accessibility:
-  - Direct speech and refreshable braille output via Prism (NVDA, JAWS,
-    VoiceOver, Orca, SAPI5/OneCore fallback).
-  - Dedicated accessible dialogs with standard tab navigation, screen reader
-    labels, and hotkeys.
-* 3-Stage Audio Cues (Earcons):
-  - Spatial audio feedback for sync transitions: start earcon, sustained loop
-    sound while syncing, and completion finish earcon.
-* Global Hotkeys:
-  - Slots 1-9 status queries, summary query (Alt+Shift+0), and Manage Sources
-    dialog (Alt+Shift+M). Pressing a slot hotkey twice quickly copies the
-    status text directly to the clipboard.
-* macOS Status Menus Bar:
-  - Native integration with the macOS top-right Status Menus bar (accessible
-    via VO+M twice) with full VoiceOver label support.
-* Cross-Platform Packaging:
-  - Standalone portable ZIPs and native installers for Windows, macOS, and Linux.
+- Multi-cloud sync monitoring:
+  Monitors status for Dropbox, Google Drive, OneDrive, Nextcloud, and other
+  cloud storage services in the background.
+- Screen reader accessibility:
+  Fully accessible with NVDA, JAWS, VoiceOver, Orca, and Windows speech.
+  Every button, status message, and dialog is labeled and keyboard accessible.
+- Audio cues:
+  Plays optional sound cues when syncing begins, while in progress, and when
+  completed.
+- Global keyboard shortcuts:
+  Press shortcuts anywhere to hear current sync status or open the settings.
+  Press a slot shortcut twice to copy the status directly to your clipboard.
+- Portable and installer packages:
+  Available as both a portable zero-install package and a standard installer
+  for Windows, Mac, and Linux.
+
 ================================================================================
