@@ -65,7 +65,15 @@ class SpeechService:
             self._backend.speak(self.last_spoken_text, interrupt=interrupt)
             return True
         except Exception as exc:
-            logger.debug("Prism speak() failed: %s", exc)
+            logger.debug("Prism speak() failed: %s; re-initializing backend", exc)
+            self._backend = None
+            self._init_backend()
+            if self._backend is not None:
+                try:
+                    self._backend.speak(self.last_spoken_text, interrupt=interrupt)
+                    return True
+                except Exception:
+                    pass
             return False
 
     def braille(self, text: str) -> bool:
@@ -101,7 +109,19 @@ class SpeechService:
                 return True
             return self.speak(self.last_spoken_text, interrupt=interrupt, force=force)
         except Exception as exc:
-            logger.debug("Prism output() failed: %s", exc)
+            logger.debug("Prism output() failed: %s; re-initializing backend", exc)
+            self._backend = None
+            self._init_backend()
+            if self._backend is not None:
+                try:
+                    if hasattr(self._backend, "output"):
+                        self._backend.output(self.last_spoken_text, interrupt=interrupt)
+                        return True
+                    if hasattr(self._backend, "speak"):
+                        self._backend.speak(self.last_spoken_text, interrupt=interrupt)
+                        return True
+                except Exception:
+                    pass
             return False
 
     def stop(self) -> None:

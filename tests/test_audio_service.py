@@ -9,7 +9,7 @@ from speak_sync.services.audio import AudioCueService, resolve_cue_file
 
 
 def test_resolve_bundled_cue_files() -> None:
-    for filename in ("start.flac", "loopty.flac", "finish.flac"):
+    for filename in ("start.ogg", "loopty.ogg", "finish.ogg", "start.flac", "loopty.flac", "finish.flac"):
         resolved = resolve_cue_file("", filename)
         assert resolved is not None, f"Bundled {filename} must resolve"
         assert resolved.name == filename
@@ -51,26 +51,26 @@ def test_audio_cue_three_stage_state_machine() -> None:
     assert audio.update_sync_activity(False, now=10.0) is None
     assert played_files == []
 
-    # Idle -> Syncing: plays start.flac
+    # Idle -> Syncing: plays start.ogg
     assert audio.update_sync_activity(True, now=11.0) == "start"
-    assert played_files == ["start.flac"]
+    assert played_files == ["start.ogg"]
     assert audio.is_sync_active is True
 
     # 1.0s later (before loop_interval_seconds=2.5): no loop yet
     assert audio.update_sync_activity(True, now=12.0) is None
-    assert played_files == ["start.flac"]
+    assert played_files == ["start.ogg"]
 
-    # 2.6s after start: plays loopty.flac
+    # 2.6s after start: plays loopty.ogg
     assert audio.update_sync_activity(True, now=13.6) == "loop"
-    assert played_files == ["start.flac", "loopty.flac"]
+    assert played_files == ["start.ogg", "loopty.ogg"]
 
-    # Another 2.6s later: plays loopty.flac again
+    # Another 2.6s later: plays loopty.ogg again
     assert audio.update_sync_activity(True, now=16.2) == "loop"
-    assert played_files == ["start.flac", "loopty.flac", "loopty.flac"]
+    assert played_files == ["start.ogg", "loopty.ogg", "loopty.ogg"]
 
-    # Syncing -> Idle: stops loop and plays finish.flac
+    # Syncing -> Idle: stops loop and plays finish.ogg
     assert audio.update_sync_activity(False, now=17.0) == "finish"
-    assert played_files == ["start.flac", "loopty.flac", "loopty.flac", "finish.flac"]
+    assert played_files == ["start.ogg", "loopty.ogg", "loopty.ogg", "finish.ogg"]
     assert audio.is_sync_active is False
 
 
@@ -82,7 +82,7 @@ def test_audio_cue_loop_disabled_and_sounds_disabled() -> None:
     assert audio.update_sync_activity(True, now=1.0) == "start"
     assert audio.update_sync_activity(True, now=5.0) is None
     assert audio.update_sync_activity(False, now=6.0) == "finish"
-    assert played_files == ["start.flac", "finish.flac"]
+    assert played_files == ["start.ogg", "finish.ogg"]
 
     cfg.enable_sounds = False
     played_files.clear()

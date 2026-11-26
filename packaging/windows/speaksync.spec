@@ -18,6 +18,12 @@ datas = [
 
 binaries = prism_binaries + wx_binaries
 
+try:
+    import comtypes.client
+    comtypes.client.GetModule("UIAutomationCore.dll")
+except Exception:
+    pass
+
 hiddenimports = [
     "soundobj",
     "_c_miniaudio",
@@ -35,6 +41,8 @@ hiddenimports = [
     "comtypes",
     "comtypes.client",
     "comtypes.stream",
+    "comtypes.gen",
+    "comtypes.gen.UIAutomationClient",
     "win32gui",
     "win32con",
     "win32process",

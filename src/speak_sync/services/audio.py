@@ -54,20 +54,32 @@ def get_assets_dir() -> Path:
 
 
 def resolve_cue_file(custom_path: str, default_filename: str) -> Path | None:
-    """Resolve a user-configured sound file or fall back to the bundled asset."""
+    """Resolve a user-configured sound file or fall back to bundled assets (.ogg, .flac, .wav)."""
     if custom_path and custom_path.strip():
         candidate = Path(custom_path.strip()).expanduser()
         if candidate.is_file():
             return candidate
 
     assets_dir = get_assets_dir()
-    bundled = assets_dir / default_filename
-    if bundled.is_file():
-        return bundled
+    exact = assets_dir / default_filename
+    if exact.is_file():
+        return exact
 
-    fallback_root = Path(__file__).resolve().parents[3] / default_filename
-    if fallback_root.is_file():
-        return fallback_root
+    stem = Path(default_filename).stem
+    for ext in (".ogg", ".flac", ".wav"):
+        candidate = assets_dir / f"{stem}{ext}"
+        if candidate.is_file():
+            return candidate
+
+    fallback_root = Path(__file__).resolve().parents[3]
+    exact_fallback = fallback_root / default_filename
+    if exact_fallback.is_file():
+        return exact_fallback
+
+    for ext in (".ogg", ".flac", ".wav"):
+        candidate = fallback_root / f"{stem}{ext}"
+        if candidate.is_file():
+            return candidate
 
     return None
 
@@ -117,18 +129,18 @@ class AudioCueService:
         return False
 
     def play_start(self) -> bool:
-        """Play the sync start earcon (start.flac)."""
-        return self._play_resolved("start", self.config.start_sound_path, "start.flac")
+        """Play the sync start earcon (start.ogg / start.flac)."""
+        return self._play_resolved("start", self.config.start_sound_path, "start.ogg")
 
     def play_loop(self) -> bool:
-        """Play the sync sustain loop earcon (loopty.flac)."""
+        """Play the sync sustain loop earcon (loopty.ogg / loopty.flac)."""
         if not self.config.enable_loop_sound:
             return False
-        return self._play_resolved("loop", self.config.loop_sound_path, "loopty.flac")
+        return self._play_resolved("loop", self.config.loop_sound_path, "loopty.ogg")
 
     def play_finish(self) -> bool:
-        """Play the sync completion earcon (finish.flac)."""
-        return self._play_resolved("finish", self.config.finish_sound_path, "finish.flac")
+        """Play the sync completion earcon (finish.ogg / finish.flac)."""
+        return self._play_resolved("finish", self.config.finish_sound_path, "finish.ogg")
 
     def update_sync_activity(
         self,

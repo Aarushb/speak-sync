@@ -318,9 +318,18 @@ class ManageSourcesDialog(wx.Dialog):
             min=0.5,
             max=30.0,
             initial=self.working_config.poll_interval_seconds,
-            inc=0.5,
+            inc=0.25,
         )
-        self.spin_poll_interval.SetDigits(1)
+        self.spin_poll_interval.SetDigits(2)
+        poll_help_text = (
+            "Tip: Decreasing interval (e.g. 0.5s – 0.75s) makes sync detection faster "
+            "and more responsive for quick file edits, but slightly increases CPU usage. "
+            "Increasing it reduces background CPU usage."
+        )
+        self.spin_poll_interval.SetToolTip(poll_help_text)
+        poll_help_lbl = wx.StaticText(panel, label=poll_help_text)
+        set_accessible_name(poll_help_lbl, poll_help_text)
+        helper.add_item(poll_help_lbl, flag=wx.LEFT | wx.RIGHT | wx.BOTTOM, border=8)
 
         self.chk_run_on_startup = wx.CheckBox(
             panel,

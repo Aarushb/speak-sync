@@ -10,7 +10,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DIST_DIR = REPO_ROOT / "dist"
 BUILD_DIR = REPO_ROOT / "build"
@@ -69,6 +69,11 @@ def run_pyinstaller() -> Path:
     if source_assets.is_dir() and not target_assets.is_dir():
         shutil.copytree(source_assets, target_assets)
 
+    # Ensure CHANGELOG.txt is copied to app_dir alongside speaksync.exe
+    changelog = REPO_ROOT / "CHANGELOG.txt"
+    if changelog.is_file():
+        shutil.copy2(changelog, app_dir / "CHANGELOG.txt")
+
     print(f"PyInstaller output generated at: {app_dir}")
     print(f"Main executable: {exe_file} ({exe_file.stat().st_size:,} bytes)")
     return app_dir
@@ -83,10 +88,13 @@ def create_portable_zip(app_dir: Path) -> Path:
         zip_path.unlink()
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        # Include README.md in root
+        # Include README.md and CHANGELOG.txt in root
         readme = REPO_ROOT / "README.md"
         if readme.is_file():
             zf.write(readme, arcname="README.md")
+        changelog = REPO_ROOT / "CHANGELOG.txt"
+        if changelog.is_file():
+            zf.write(changelog, arcname="CHANGELOG.txt")
 
         # Walk through app_dir and archive all files
         for root, _dirs, files in os.walk(app_dir):

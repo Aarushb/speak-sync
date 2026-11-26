@@ -104,7 +104,7 @@ class AppConfig:
     """Application settings and monitored source rules."""
 
     sources: list[SourceRule] = field(default_factory=default_source_rules)
-    poll_interval_seconds: float = 1.5
+    poll_interval_seconds: float = 0.75
 
     # Speech preferences
     enable_speech: bool = True

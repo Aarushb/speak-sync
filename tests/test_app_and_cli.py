@@ -89,7 +89,7 @@ def test_controller_end_to_end_transitions(wx_app: wx.App, tmp_path: Path) -> No
         )
         ctrl.poll_once(is_initial=False)
         assert recorder.outputs[-1] == "Google Drive: Syncing 3 of 8"
-        assert played_cues == ["start.flac"]
+        assert played_cues == ["start.ogg"]
 
         # Transition Google Drive back to Up to date
         backend.set_items(
@@ -108,7 +108,7 @@ def test_controller_end_to_end_transitions(wx_app: wx.App, tmp_path: Path) -> No
         )
         ctrl.poll_once(is_initial=False)
         assert recorder.outputs[-1] == "Google Drive: Everything is up to date"
-        assert played_cues == ["start.flac", "finish.flac"]
+        assert played_cues == ["start.ogg", "finish.ogg"]
     finally:
         ctrl.shutdown()
 

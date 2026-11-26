@@ -247,8 +247,11 @@ class WindowsTrayBackend(TrayBackend):
             import comtypes.client
 
             comtypes.CoInitialize()
-            comtypes.client.GetModule("UIAutomationCore.dll")
-            from comtypes.gen import UIAutomationClient
+            try:
+                from comtypes.gen import UIAutomationClient
+            except ImportError:
+                comtypes.client.GetModule("UIAutomationCore.dll")
+                from comtypes.gen import UIAutomationClient
 
             uia = comtypes.client.CreateObject(
                 UIAutomationClient.CUIAutomation,

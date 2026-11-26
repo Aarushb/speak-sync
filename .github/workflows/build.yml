@@ -127,10 +127,15 @@ jobs:
 
       - name: Create macOS DMG installer and portable zip
         run: |
+          cp CHANGELOG.txt dist/CHANGELOG.txt
+          cp CHANGELOG.txt dist/SpeakSync.app/Contents/Resources/CHANGELOG.txt
           cd dist
-          zip -r -y SpeakSync-v0.1.0-macos-portable.zip SpeakSync.app
+          zip -r -y SpeakSync-v0.1.1-macos-portable.zip SpeakSync.app CHANGELOG.txt
           cd ..
-          hdiutil create -volname "SpeakSync" -srcfolder dist/SpeakSync.app -ov -format UDZO dist/SpeakSync-v0.1.0-macos-installer.dmg
+          mkdir -p dist/dmg-contents
+          cp -r dist/SpeakSync.app dist/dmg-contents/
+          cp CHANGELOG.txt dist/dmg-contents/
+          hdiutil create -volname "SpeakSync" -srcfolder dist/dmg-contents -ov -format UDZO dist/SpeakSync-v0.1.1-macos-installer.dmg
 
       - name: Upload macOS Artifacts
         uses: actions/upload-artifact@v4
@@ -199,22 +204,24 @@ jobs:
 
       - name: Create Linux release packages
         run: |
+          cp CHANGELOG.txt dist/speaksync/CHANGELOG.txt
           cd dist
-          tar -czvf SpeakSync-v0.1.0-linux-portable.tar.gz speaksync/
+          tar -czvf SpeakSync-v0.1.1-linux-portable.tar.gz speaksync/
           cd ..
-          mkdir -p deb-pkg/DEBIAN deb-pkg/opt/speaksync deb-pkg/usr/local/bin
+          mkdir -p deb-pkg/DEBIAN deb-pkg/opt/speaksync deb-pkg/usr/local/bin deb-pkg/usr/share/doc/speaksync
           cp -r dist/speaksync/* deb-pkg/opt/speaksync/
+          cp CHANGELOG.txt deb-pkg/usr/share/doc/speaksync/changelog
           ln -s /opt/speaksync/speaksync deb-pkg/usr/local/bin/speaksync
           cat << 'EOF' > deb-pkg/DEBIAN/control
           Package: speaksync
-          Version: 0.1.0
+          Version: 0.1.1
           Section: utils
           Priority: optional
           Architecture: amd64
           Maintainer: Aarush Bhatnagar
           Description: Accessible cloud sync tray monitor with Prism screen reader speech and audio cues.
           EOF
-          dpkg-deb --build deb-pkg dist/SpeakSync-v0.1.0-linux-installer.deb
+          dpkg-deb --build deb-pkg dist/SpeakSync-v0.1.1-linux-installer.deb
 
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
@@ -233,6 +240,9 @@ jobs:
       contents: write
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -244,11 +254,12 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: CHANGELOG.txt
           files: |
+            CHANGELOG.txt
             release-artifacts/SpeakSync-Windows-Installer/*.exe
             release-artifacts/SpeakSync-Windows-Portable/*.zip
             release-artifacts/SpeakSync-macOS-Bundle/*.dmg
             release-artifacts/SpeakSync-macOS-Bundle/*.zip
             release-artifacts/SpeakSync-Linux-Bundle/*.deb
             release-artifacts/SpeakSync-Linux-Bundle/*.tar.gz
-          generate_release_notes: true
