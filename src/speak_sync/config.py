@@ -134,6 +134,10 @@ class AppConfig:
     # OS startup
     run_on_startup: bool = False
 
+    # Automatic updates
+    check_for_updates: bool = True
+    update_check_interval_hours: float = 6.0
+
     # Excluded raw tooltip prefixes if user explicitly hides an unknown source
     ignored_keywords: list[str] = field(default_factory=list)
 
